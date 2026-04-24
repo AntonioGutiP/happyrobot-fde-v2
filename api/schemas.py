@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Optional
 from models import CallOutcome, CallSentiment
@@ -74,6 +74,13 @@ class CallCreate(BaseModel):
     fmcsa_verified: bool = False
     fmcsa_status: Optional[str] = None
     extracted_data: Optional[dict] = None
+
+    @field_validator("carrier_mc", "carrier_dot", "fmcsa_status", mode="before")
+    @classmethod
+    def coerce_to_str(cls, v):
+        if v is not None:
+            return str(v)
+        return v
 
 
 class CallOut(BaseModel):
