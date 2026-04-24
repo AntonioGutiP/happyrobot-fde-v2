@@ -75,12 +75,33 @@ class CallCreate(BaseModel):
     fmcsa_status: Optional[str] = None
     extracted_data: Optional[dict] = None
 
-    @field_validator("carrier_mc", "carrier_dot", "fmcsa_status", mode="before")
+    @field_validator("carrier_mc", "carrier_dot", "fmcsa_status", "load_id", "carrier_name", mode="before")
     @classmethod
     def coerce_to_str(cls, v):
-        if v is not None:
-            return str(v)
-        return v
+        if v is None or v == "":
+            return None
+        return str(v)
+
+    @field_validator("initial_rate", "agreed_price", "call_duration", mode="before")
+    @classmethod
+    def coerce_to_float(cls, v):
+        if v is None or v == "":
+            return None
+        return float(v)
+
+    @field_validator("num_rounds", mode="before")
+    @classmethod
+    def coerce_to_int(cls, v):
+        if v is None or v == "":
+            return 0
+        return int(v)
+
+    @field_validator("fmcsa_verified", mode="before")
+    @classmethod
+    def coerce_to_bool(cls, v):
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes")
+        return bool(v) if v is not None else False
 
 
 class CallOut(BaseModel):
