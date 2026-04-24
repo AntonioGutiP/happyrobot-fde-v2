@@ -5,22 +5,26 @@ Endpoints used:
   - /carriers/docket-number/{mc}       → lookup by MC/MX number
   - /carriers/{dotNumber}              → lookup by DOT number
   - /carriers/name/{name}              → lookup by company name
-  - /carriers/{dotNumber}/authority     → authority history (optional enrichment)
 
 Eligibility logic:
   - allowToOperate == "Y" AND outOfService != "Y" → eligible
-  - Everything else → not eligible, with specific reason
+  - Everything else → not eligible
+
+Safety principle:
+  - If FMCSA is unreachable, carrier is NOT approved.
+  - A freight brokerage cannot accept unverified carriers.
+  - The fallback is always rejection with a clear reason.
 """
 
 import httpx
 import logging
-from typing import Optional
+import urllib.parse
 from config import get_settings
 from schemas import CarrierVerification
 
 logger = logging.getLogger(__name__)
 
-FMCSA_TIMEOUT = 10.0  # seconds
+FMCSA_TIMEOUT = 15.0  # seconds — FMCSA can be slow
 
 
 async def verify_carrier_by_mc(mc_number: str) -> CarrierVerification:
@@ -38,10 +42,10 @@ async def verify_carrier_by_mc(mc_number: str) -> CarrierVerification:
             data_source="validation",
         )
 
-    # If no FMCSA key configured, use mock fallback
+    # If no FMCSA key configured → reject
     if not settings.fmcsa_api_key:
-        logger.warning("FMCSA_API_KEY not set — returning mock response")
-        return _mock_carrier(mc_number, reason="FMCSA API key not configured")
+        logger.warning("FMCSA_API_KEY not set — cannot verify carrier")
+        return _unverified_rejection(mc_number, "FMCSA API key not configured — cannot verify carrier")
 
     url = f"{settings.fmcsa_base_url}/carriers/docket-number/{clean_mc}"
     params = {"webKey": settings.fmcsa_api_key}
@@ -49,6 +53,8 @@ async def verify_carrier_by_mc(mc_number: str) -> CarrierVerification:
     try:
         async with httpx.AsyncClient(timeout=FMCSA_TIMEOUT) as client:
             resp = await client.get(url, params=params)
+
+        logger.info(f"FMCSA MC lookup [{clean_mc}]: status={resp.status_code}")
 
         if resp.status_code == 404:
             return CarrierVerification(
@@ -60,7 +66,7 @@ async def verify_carrier_by_mc(mc_number: str) -> CarrierVerification:
 
         if resp.status_code == 401:
             logger.error("FMCSA API authentication failed — check your webkey")
-            return _mock_carrier(mc_number, reason="FMCSA API auth failed — using fallback")
+            return _unverified_rejection(mc_number, "FMCSA API authentication failed")
 
         resp.raise_for_status()
         data = resp.json()
@@ -68,14 +74,14 @@ async def verify_carrier_by_mc(mc_number: str) -> CarrierVerification:
         return _parse_fmcsa_response(mc_number, data)
 
     except httpx.TimeoutException:
-        logger.warning("FMCSA API timed out — using mock fallback")
-        return _mock_carrier(mc_number, reason="FMCSA API timed out")
+        logger.warning(f"FMCSA API timed out for MC {clean_mc}")
+        return _unverified_rejection(mc_number, "FMCSA API timed out — unable to verify carrier")
     except httpx.HTTPError as e:
-        logger.warning(f"FMCSA API error: {e} — using mock fallback")
-        return _mock_carrier(mc_number, reason=f"FMCSA API error: {str(e)}")
+        logger.warning(f"FMCSA API HTTP error for MC {clean_mc}: {e}")
+        return _unverified_rejection(mc_number, "FMCSA API error — unable to verify carrier")
     except Exception as e:
-        logger.error(f"Unexpected error calling FMCSA: {e}")
-        return _mock_carrier(mc_number, reason="Unexpected FMCSA error")
+        logger.error(f"Unexpected error calling FMCSA for MC {clean_mc}: {e}")
+        return _unverified_rejection(mc_number, "FMCSA service unavailable — unable to verify carrier")
 
 
 async def verify_carrier_by_dot(dot_number: str) -> CarrierVerification:
@@ -83,8 +89,16 @@ async def verify_carrier_by_dot(dot_number: str) -> CarrierVerification:
     settings = get_settings()
     clean_dot = dot_number.strip().lstrip("0")
 
+    if not clean_dot or not clean_dot.isdigit():
+        return CarrierVerification(
+            mc_number=f"DOT-{dot_number}",
+            is_eligible=False,
+            eligibility_reason="Invalid DOT number format",
+            data_source="validation",
+        )
+
     if not settings.fmcsa_api_key:
-        return _mock_carrier(f"DOT-{clean_dot}", reason="FMCSA API key not configured")
+        return _unverified_rejection(f"DOT-{clean_dot}", "FMCSA API key not configured")
 
     url = f"{settings.fmcsa_base_url}/carriers/{clean_dot}"
     params = {"webKey": settings.fmcsa_api_key}
@@ -92,6 +106,8 @@ async def verify_carrier_by_dot(dot_number: str) -> CarrierVerification:
     try:
         async with httpx.AsyncClient(timeout=FMCSA_TIMEOUT) as client:
             resp = await client.get(url, params=params)
+
+        logger.info(f"FMCSA DOT lookup [{clean_dot}]: status={resp.status_code}")
 
         if resp.status_code == 404:
             return CarrierVerification(
@@ -101,13 +117,23 @@ async def verify_carrier_by_dot(dot_number: str) -> CarrierVerification:
                 data_source="fmcsa_api",
             )
 
+        if resp.status_code == 401:
+            return _unverified_rejection(f"DOT-{clean_dot}", "FMCSA API authentication failed")
+
         resp.raise_for_status()
         data = resp.json()
+
         return _parse_fmcsa_response(f"DOT-{clean_dot}", data)
 
+    except httpx.TimeoutException:
+        logger.warning(f"FMCSA API timed out for DOT {clean_dot}")
+        return _unverified_rejection(f"DOT-{clean_dot}", "FMCSA API timed out")
+    except httpx.HTTPError as e:
+        logger.warning(f"FMCSA DOT lookup HTTP error: {e}")
+        return _unverified_rejection(f"DOT-{clean_dot}", "FMCSA API error")
     except Exception as e:
-        logger.warning(f"FMCSA DOT lookup error: {e}")
-        return _mock_carrier(f"DOT-{clean_dot}", reason=f"FMCSA API error: {str(e)}")
+        logger.error(f"FMCSA DOT lookup unexpected error: {e}")
+        return _unverified_rejection(f"DOT-{clean_dot}", "FMCSA service unavailable")
 
 
 async def search_carrier_by_name(name: str) -> list[dict]:
@@ -117,22 +143,30 @@ async def search_carrier_by_name(name: str) -> list[dict]:
     if not settings.fmcsa_api_key:
         return []
 
-    url = f"{settings.fmcsa_base_url}/carriers/name/{name}"
+    encoded_name = urllib.parse.quote(name.strip())
+    url = f"{settings.fmcsa_base_url}/carriers/name/{encoded_name}"
     params = {"webKey": settings.fmcsa_api_key}
 
     try:
         async with httpx.AsyncClient(timeout=FMCSA_TIMEOUT) as client:
             resp = await client.get(url, params=params)
 
+        logger.info(f"FMCSA name search [{name}]: status={resp.status_code}")
+
         if resp.status_code != 200:
+            logger.warning(f"FMCSA name search failed: {resp.status_code}")
             return []
 
         data = resp.json()
+
+        # Handle both response formats
         content = data.get("content", [])
+        if not content and isinstance(data, list):
+            content = data
 
         results = []
-        for carrier in content[:10]:  # Cap at 10
-            c = carrier.get("carrier", carrier)
+        for carrier_wrapper in content[:10]:
+            c = carrier_wrapper.get("carrier", carrier_wrapper)
             results.append({
                 "legal_name": c.get("legalName", ""),
                 "dba_name": c.get("dbaName", ""),
@@ -155,20 +189,27 @@ async def search_carrier_by_name(name: str) -> list[dict]:
 
 def _parse_fmcsa_response(mc_number: str, data: dict) -> CarrierVerification:
     """Parse FMCSA JSON response into our CarrierVerification schema."""
-    # FMCSA wraps single-carrier responses in {"content": [{"carrier": {...}}]}
+    # FMCSA wraps responses in {"content": [{"carrier": {...}}]}
+    # But DOT lookups may return differently
     content = data.get("content", [])
 
     if not content:
-        return CarrierVerification(
-            mc_number=mc_number,
-            is_eligible=False,
-            eligibility_reason="No carrier data returned from FMCSA",
-            data_source="fmcsa_api",
-        )
-
-    # Take first match
-    carrier_wrapper = content[0]
-    carrier = carrier_wrapper.get("carrier", carrier_wrapper)
+        # Maybe the data IS the carrier directly (DOT lookup format)
+        if "dotNumber" in data or "legalName" in data:
+            carrier = data
+        elif isinstance(data, list) and len(data) > 0:
+            carrier = data[0].get("carrier", data[0])
+        else:
+            return CarrierVerification(
+                mc_number=mc_number,
+                is_eligible=False,
+                eligibility_reason="No carrier data returned from FMCSA",
+                data_source="fmcsa_api",
+            )
+    else:
+        # Standard format: content array
+        carrier_wrapper = content[0]
+        carrier = carrier_wrapper.get("carrier", carrier_wrapper)
 
     allow = carrier.get("allowToOperate", "N")
     oos = carrier.get("outOfService", "N")
@@ -187,11 +228,11 @@ def _parse_fmcsa_response(mc_number: str, data: dict) -> CarrierVerification:
     is_eligible = allow == "Y" and oos != "Y"
 
     if oos == "Y":
-        reason = "Carrier is out of service"
+        reason = "Carrier is out of service — not eligible"
     elif allow != "Y":
-        reason = f"Carrier not authorized to operate (allowToOperate={allow})"
+        reason = f"Carrier not authorized to operate (status: {allow})"
     else:
-        reason = "Carrier is authorized and active"
+        reason = "Carrier is authorized and active — eligible"
 
     return CarrierVerification(
         mc_number=mc,
@@ -208,16 +249,17 @@ def _parse_fmcsa_response(mc_number: str, data: dict) -> CarrierVerification:
     )
 
 
-def _mock_carrier(mc_number: str, reason: str = "") -> CarrierVerification:
+def _unverified_rejection(mc_number: str, reason: str) -> CarrierVerification:
     """
-    Fallback mock when FMCSA API is unavailable.
-    Returns eligible=True with a warning so development/demos can proceed.
+    Safe fallback when FMCSA API is unavailable.
+
+    ALWAYS returns is_eligible=False.
+    A freight brokerage cannot accept unverified carriers —
+    if we can't check FMCSA, the carrier does not pass.
     """
     return CarrierVerification(
         mc_number=mc_number,
-        dot_number="MOCK-000000",
-        legal_name="Mock Carrier (FMCSA Unavailable)",
-        is_eligible=True,
-        eligibility_reason=f"MOCK RESPONSE — {reason}. Treat as eligible for demo purposes.",
-        data_source="mock_fallback",
+        is_eligible=False,
+        eligibility_reason=f"UNVERIFIED — {reason}. Please try again or contact support.",
+        data_source="fmcsa_unavailable",
     )
