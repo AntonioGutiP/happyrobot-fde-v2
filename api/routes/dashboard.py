@@ -72,11 +72,12 @@ async def dashboard_data(
     )
     total_revenue = float(revenue_q.scalar() or 0)
 
-    # Average margin (loadboard_rate - agreed_price) / loadboard_rate
-    margin_q = await db.execute(
+    # Average concession: how much above listed rate we paid (as positive %)
+    # 0% = held firm, 4.8% = stretched 4.8% above listed
+    concession_q = await db.execute(
         select(
             func.avg(
-                (CallRecord.initial_rate - CallRecord.agreed_price)
+                func.abs(CallRecord.agreed_price - CallRecord.initial_rate)
                 / CallRecord.initial_rate * 100
             )
         )
@@ -90,7 +91,7 @@ async def dashboard_data(
             )
         )
     )
-    avg_margin = round(float(margin_q.scalar() or 0), 1)
+    avg_concession = round(float(concession_q.scalar() or 0), 1)
 
     # Rate integrity: % of booked deals where agreed_price <= initial_rate (never overpaid)
     integrity_total_q = await db.execute(
@@ -148,7 +149,7 @@ async def dashboard_data(
         "total_calls": total_calls,
         "conversion_rate": conversion_rate,
         "total_revenue": total_revenue,
-        "avg_margin_pct": avg_margin,
+        "avg_concession_pct": avg_concession,
         "rate_integrity": rate_integrity,
         "cost_savings": cost_savings,
         "roi_pct": roi_pct,
@@ -207,14 +208,14 @@ async def dashboard_data(
         .order_by(CallRecord.created_at.desc())
     )
     deals = []
-    total_margin_dollars = 0
+    total_concession_dollars = 0
     for row in deals_q.all():
         agreed = float(row[0]) if row[0] else 0
         initial = float(row[1]) if row[1] else 0
         miles = float(row[4]) if row[4] else 0
-        margin_dollars = initial - agreed
-        margin_pct = round(margin_dollars / initial * 100, 1) if initial else 0
-        total_margin_dollars += margin_dollars
+        concession = abs(agreed - initial)
+        concession_pct = round(concession / initial * 100, 1) if initial else 0
+        total_concession_dollars += concession
         deals.append({
             "load_id": row[3],
             "lane": f"{row[5]} → {row[6]}" if row[5] and row[6] else None,
@@ -223,16 +224,17 @@ async def dashboard_data(
             "agreed_price": agreed,
             "listed_rpm": round(initial / miles, 2) if miles > 0 else None,
             "booked_rpm": round(agreed / miles, 2) if miles > 0 else None,
-            "margin_dollars": round(margin_dollars, 2),
-            "margin_pct": margin_pct,
+            "concession_dollars": round(concession, 2),
+            "concession_pct": concession_pct,
+            "direction": "above" if agreed > initial else ("below" if agreed < initial else "at_rate"),
             "rounds": row[2],
         })
 
     revenue = {
         "total_revenue": total_revenue,
         "avg_deal_size": round(avg_deal_size, 2),
-        "total_margin_saved": round(total_margin_dollars, 2),
-        "avg_margin_pct": avg_margin,
+        "total_concession": round(total_concession_dollars, 2),
+        "avg_concession_pct": avg_concession,
         "cost_per_call_human": HUMAN_COST_PER_CALL,
         "cost_per_call_ai": AI_COST_PER_CALL,
         "cost_savings": cost_savings,

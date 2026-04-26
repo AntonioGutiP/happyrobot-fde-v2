@@ -450,16 +450,11 @@ function renderDeals(rev, exec) {
   if (rev.deals.length > 0) {
     $('revenue-insight').classList.remove('hidden');
     const integrity = exec.rate_integrity;
-    const margin = rev.avg_margin_pct;
-    if (margin < -1) {
-      // AI conceded above listed rate (carrier pushed UP successfully)
-      $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> AI conceded <strong>${Math.abs(margin)}%</strong> above listed rate on average — within controlled limits. Rate integrity at <strong>${integrity}%</strong>. Human reps typically concede 10-15% under carrier pressure.`;
-    } else if (margin <= 1) {
-      // AI held firm at listed rate
+    const concession = rev.avg_concession_pct;
+    if (concession < 1) {
       $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> AI held firm on <strong>${integrity}%</strong> of deals — carriers paid the listed rate. No rate erosion from carrier pressure. Human reps typically cave on 15-30% of negotiations.`;
     } else {
-      // Carrier accepted below listed (pushed DOWN)
-      $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> AI captured <strong>${margin}%</strong> average savings below listed rates. Rate integrity at <strong>${integrity}%</strong>. Some carriers accepted below listed rate — broker retained extra margin.`;
+      $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> Average concession: <strong>${concession}%</strong> from listed rate. Rate integrity at <strong>${integrity}%</strong>. Human reps typically concede 10-15% — AI is ${concession < 5 ? 'significantly more disciplined' : 'within acceptable range'}.`;
     }
   }
 }
@@ -693,8 +688,8 @@ function renderImpact(exec, rev, exp, funnel) {
         <span class="text-sm font-semibold text-success">${pct(exec.rate_integrity)}</span>
       </div>
       <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-400 tip">Avg deal at rate<span class="tip-text">Most deals close at the listed rate when the AI holds firm. Any savings below listed rate are a bonus.</span></span>
-        <span class="text-sm font-semibold text-accent-light">${rev.total_margin_saved > 0 ? money(rev.total_margin_saved) + ' saved' : 'At listed rate'}</span>
+        <span class="text-sm text-dark-400 tip">Concession cost<span class="tip-text">Total amount conceded above listed rates to close deals. Lower is better — $0 means the AI never stretched above listed rate.</span></span>
+        <span class="text-sm font-semibold ${rev.total_concession === 0 ? 'text-success' : 'text-warning'}">${rev.total_concession === 0 ? 'None — held firm' : money(rev.total_concession) + ' total'}</span>
       </div>
     </div>
   `;
