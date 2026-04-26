@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func, case, and_
 from typing import Optional
+from datetime import datetime
 from database import get_db
-from models import Load
+from models import Load, CallRecord
 from schemas import LoadOut
 
 router = APIRouter(prefix="/loads", tags=["Loads"])
@@ -21,10 +22,10 @@ async def search_loads(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Search available loads. Used by HappyRobot agent during calls
-    to find matching loads for a carrier.
+    Search available loads ranked by highest loadboard rate first.
 
-    Supports partial matching on origin/destination (case-insensitive).
+    Ranking by rate maximizes margin opportunity — the agent pitches
+    the most profitable load first, with fallbacks for the carrier.
     """
     query = select(Load)
 
@@ -41,12 +42,87 @@ async def search_loads(
     if status:
         query = query.where(Load.status == status)
 
-    query = query.order_by(Load.pickup_datetime).limit(limit)
+    # Rank by highest rate first (best margin opportunity)
+    query = query.order_by(Load.loadboard_rate.desc()).limit(limit)
 
     result = await db.execute(query)
-    loads = result.scalars().all()
+    return result.scalars().all()
 
-    return loads
+
+@router.get("/{load_id}/market-context")
+async def get_market_context(load_id: str, db: AsyncSession = Depends(get_db)):
+    """
+    Returns market intelligence for a specific load.
+
+    Used by the agent to adjust negotiation strategy dynamically:
+    - High decline count → be more flexible on price
+    - Just posted, no declines → hold firm
+    - Multiple pitches with no booking → consider lowering floor
+
+    This enables dynamic pricing instead of static floor rules.
+    """
+    # Verify load exists
+    load_result = await db.execute(select(Load).where(Load.load_id == load_id))
+    load = load_result.scalar_one_or_none()
+    if not load:
+        raise HTTPException(status_code=404, detail=f"Load {load_id} not found")
+
+    # Count how many times this load has been pitched
+    pitch_count_q = await db.execute(
+        select(func.count(CallRecord.call_id)).where(CallRecord.load_id == load_id)
+    )
+    pitch_count = pitch_count_q.scalar() or 0
+
+    # Count declines and rejections for this load
+    decline_count_q = await db.execute(
+        select(func.count(CallRecord.call_id)).where(
+            and_(
+                CallRecord.load_id == load_id,
+                CallRecord.outcome.in_(["carrier_declined", "rejected"]),
+            )
+        )
+    )
+    decline_count = decline_count_q.scalar() or 0
+
+    # Days on market
+    days_on_market = (datetime.utcnow() - load.pickup_datetime).days
+    if days_on_market < 0:
+        days_on_market = 0
+
+    # Average offered price for declined calls on this load
+    avg_declined_q = await db.execute(
+        select(func.avg(CallRecord.agreed_price)).where(
+            and_(
+                CallRecord.load_id == load_id,
+                CallRecord.outcome == "rejected",
+                CallRecord.agreed_price.isnot(None),
+            )
+        )
+    )
+    avg_declined_price = avg_declined_q.scalar()
+
+    # Determine pricing recommendation
+    if decline_count >= 3:
+        pricing_strategy = "flexible"
+        recommendation = "This load has been declined multiple times. Consider lowering the floor price to close a deal."
+    elif decline_count >= 1 and pitch_count >= 2:
+        pricing_strategy = "moderate"
+        recommendation = "Some carrier interest but no booking yet. Small concessions may help close."
+    else:
+        pricing_strategy = "firm"
+        recommendation = "Fresh load with limited exposure. Hold firm on pricing."
+
+    return {
+        "load_id": load_id,
+        "loadboard_rate": load.loadboard_rate,
+        "pitch_count": pitch_count,
+        "decline_count": decline_count,
+        "book_count": pitch_count - decline_count,
+        "days_on_market": days_on_market,
+        "avg_declined_price": round(avg_declined_price, 2) if avg_declined_price else None,
+        "pricing_strategy": pricing_strategy,
+        "recommendation": recommendation,
+    }
 
 
 @router.get("/{load_id}", response_model=LoadOut)

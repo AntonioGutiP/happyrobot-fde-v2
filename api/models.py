@@ -93,3 +93,19 @@ class CallRecord(Base):
 
     # Relationship
     load: Mapped[Load | None] = relationship(back_populates="call_records")
+
+
+class CarrierPreference(Base):
+    """Stores carrier lane/equipment preferences when no loads match.
+    Feeds dashboard's 'unmet demand' analytics."""
+    __tablename__ = "carrier_preferences"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    carrier_mc: Mapped[str] = mapped_column(String(20))
+    carrier_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    origin: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    destination: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    equipment_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    min_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
