@@ -31,6 +31,25 @@ import time
 
 router = APIRouter(prefix="/negotiate", tags=["Negotiation"])
 
+
+def voice_dollars(amount):
+    """Format dollar amounts for natural speech.
+    $3100 → 'thirty-one hundred'
+    $3160 → 'thirty-one sixty'
+    $2200 → 'twenty-two hundred'
+    $950 → 'nine-fifty'
+    """
+    amount = int(round(amount))
+    if amount >= 1000:
+        thousands = amount // 100
+        remainder = amount % 100
+        if remainder == 0:
+            return f"{thousands} hundred"
+        else:
+            return f"{thousands} {remainder:02d}"
+    else:
+        return str(amount)
+
 # Session tracking
 _sessions: dict[str, dict] = {}
 _call_starts: dict[str, float] = {}
@@ -113,9 +132,11 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
     opening = req.opening_rate or loadboard_rate
     miles = load.miles or 1
 
-    # Per-mile conversion
+    # Auto-detect per-mile: if offer < 50, it's clearly per-mile (no one offers $20 flat for a load)
     offer = req.carrier_offer
-    if req.is_per_mile and miles > 0:
+    detected_per_mile = False
+    if offer < 50 and miles > 0:
+        detected_per_mile = True
         offer = round(req.carrier_offer * miles, 2)
 
     rpm = round(opening / miles, 2) if miles > 0 else None
@@ -175,7 +196,7 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
         record("accepted")
         return build(
             "accept",
-            f"Done. ${offer:.0f} works. Let me get you connected.",
+            f"Done. {voice_dollars(offer)} works. Let me get you connected.",
             reasoning=f"Carrier offered ${offer:.0f}, at or below opening ${opening:.0f}.",
         )
 
@@ -184,7 +205,7 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
         record("rejected_absurd")
         return build(
             "reject",
-            f"That's way above what this lane pays. We're at ${opening:.0f} — about ${rpm} a mile.",
+            f"That's way above what this lane pays. We're at {voice_dollars(opening)} — about {rpm} a mile.",
             reasoning=f"${offer:.0f} exceeds 150% of loadboard ${loadboard_rate:.0f}.",
         )
 
@@ -222,7 +243,7 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
         record("accepted", counter)
         return build(
             "accept",
-            f"I can make ${offer:.0f} work. Let me get you connected.",
+            f"I can make {voice_dollars(offer)} work. Let me get you connected.",
             concession=actual_concession,
             reasoning=f"Carrier ${offer:.0f} ≤ our R{req.current_round} counter ${counter:.0f}. Accept.",
         )
@@ -231,11 +252,11 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
     record("counter", counter)
 
     if req.current_round == 1:
-        guidance = f"Can't go that high on this one. We're at ${counter:.0f} — about ${counter_rpm} a mile."
+        guidance = f"Can't go that high on this one. We're at {voice_dollars(counter)} — about {counter_rpm} a mile."
     elif req.current_round == 2:
-        guidance = f"Tell you what, I can stretch to ${counter:.0f} — that's ${counter_rpm} a mile. That's me going above rate for you."
+        guidance = f"Tell you what, I can stretch to {voice_dollars(counter)} — that's {counter_rpm} a mile. That's me going above rate for you."
     else:
-        guidance = f"Alright, absolute max I can do is ${counter:.0f} — ${counter_rpm} a mile. That's my ceiling."
+        guidance = f"Alright, absolute max I can do is {voice_dollars(counter)} — {counter_rpm} a mile. That's my ceiling."
 
     return build(
         "counter", guidance,
