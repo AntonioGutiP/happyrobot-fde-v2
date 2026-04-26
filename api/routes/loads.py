@@ -49,6 +49,33 @@ async def search_loads(
     return result.scalars().all()
 
 
+@router.get("/{load_id}/available")
+async def check_availability(load_id: str, db: AsyncSession = Depends(get_db)):
+    """
+    Quick availability check before pitching a load.
+
+    Prevents the agent from pitching a load that was booked
+    by another call seconds ago. Returns a simple yes/no
+    with the current status.
+    """
+    result = await db.execute(select(Load).where(Load.load_id == load_id))
+    load = result.scalar_one_or_none()
+
+    if not load:
+        return {
+            "load_id": load_id,
+            "available": False,
+            "reason": "Load not found",
+        }
+
+    return {
+        "load_id": load_id,
+        "available": load.status == "available",
+        "status": load.status,
+        "reason": "Load is available" if load.status == "available" else f"Load is {load.status}",
+    }
+
+
 @router.get("/{load_id}/market-context")
 async def get_market_context(load_id: str, db: AsyncSession = Depends(get_db)):
     """

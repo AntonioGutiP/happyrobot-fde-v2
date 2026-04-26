@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import get_settings
 from database import engine, Base, async_session
 from middleware import APIKeyMiddleware
-from routes import health, loads, carriers, calls, preferences, dashboard
+from routes import health, loads, carriers, calls, preferences, dashboard, negotiate
 from seed_data import seed_database
 
 logging.basicConfig(level=logging.INFO)
@@ -77,6 +77,7 @@ app.include_router(carriers.router, prefix="/api/v1")
 app.include_router(calls.router, prefix="/api/v1")
 app.include_router(preferences.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(negotiate.router, prefix="/api/v1")
 
 
 @app.get("/")

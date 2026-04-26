@@ -76,7 +76,33 @@ async def carrier_history(mc_number: str, db: AsyncSession = Depends(get_db)):
     # Summarize history
     total_calls = len(calls)
     booked_count = sum(1 for c in calls if c.outcome == "booked")
+    declined_count = sum(1 for c in calls if c.outcome in ("rejected", "carrier_declined"))
+    positive_count = sum(1 for c in calls if c.sentiment == "positive")
+    negative_count = sum(1 for c in calls if c.sentiment in ("negative", "hostile"))
     last_call = calls[0]
+
+    # --- Carrier Qualification Score ---
+    # Score 0-100 based on:
+    #   - Booking rate (40% weight): booked / total calls
+    #   - Sentiment (30% weight): positive ratio
+    #   - Reliability (30% weight): repeat engagement
+    booking_rate = booked_count / total_calls if total_calls > 0 else 0
+    sentiment_score = (positive_count / total_calls) if total_calls > 0 else 0.5
+    reliability_score = min(total_calls / 5, 1.0)  # maxes at 5 calls
+
+    raw_score = (booking_rate * 40) + (sentiment_score * 30) + (reliability_score * 30)
+    qualification_score = round(min(raw_score, 100), 0)
+
+    # Tier assignment
+    if qualification_score >= 70:
+        tier = "preferred"
+        tier_guidance = "High-value carrier. Prioritize their requests, offer best rates first."
+    elif qualification_score >= 40:
+        tier = "standard"
+        tier_guidance = "Regular carrier. Standard service, normal negotiation approach."
+    else:
+        tier = "new"
+        tier_guidance = "New or low-engagement carrier. Build the relationship, be welcoming."
 
     # Extract preferred lanes from past calls
     lanes = []
@@ -106,7 +132,11 @@ async def carrier_history(mc_number: str, db: AsyncSession = Depends(get_db)):
         "is_repeat_caller": True,
         "total_previous_calls": total_calls,
         "booked_count": booked_count,
+        "declined_count": declined_count,
         "carrier_name": last_call.carrier_name,
+        "qualification_score": qualification_score,
+        "tier": tier,
+        "tier_guidance": tier_guidance,
         "last_call_date": last_call.created_at.isoformat() if last_call.created_at else None,
         "last_outcome": last_call.outcome,
         "preferred_lanes": list(set(lanes))[:5],
