@@ -242,33 +242,30 @@ table td { font-size: 0.85rem; }
     <div id="recent-calls" class="overflow-x-auto"></div>
   </section>
 
-  <!-- Business Impact — Scale Simulator -->
+  <!-- Agent P&L -->
   <section class="impact-hero p-6">
-    <div class="flex items-center gap-3 mb-2">
-      <div class="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center">
-        <svg class="w-5 h-5 text-accent-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-      </div>
+    <div class="flex items-center justify-between mb-6">
       <div>
-        <h2 class="text-lg font-bold">Business Impact</h2>
-        <p class="text-dark-400 text-xs">From proof-of-concept to production — what scaling looks like</p>
+        <h2 class="text-lg font-bold">Agent P&L</h2>
+        <p class="text-dark-400 text-xs">Financial performance of the AI carrier sales agent</p>
       </div>
+      <div id="pl-hero" class="text-right"></div>
     </div>
 
-    <!-- Performance Scorecard -->
-    <div class="mb-6">
-      <p class="text-xs text-dark-500 uppercase tracking-wider mb-3">AI Agent Scorecard</p>
-      <div class="grid grid-cols-2 md:grid-cols-6 gap-3" id="scorecard"></div>
+    <!-- P&L Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div id="pl-revenue" class="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5"></div>
+      <div id="pl-cost" class="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5"></div>
     </div>
 
-    <!-- Scale Projections -->
-    <p class="text-xs text-dark-500 uppercase tracking-wider mb-3">Scale Projections</p>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" id="scale-projections"></div>
+    <!-- Unit Economics -->
+    <div id="pl-unit" class="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mb-6"></div>
 
-    <!-- FTE + Availability -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="impact-comparison"></div>
+    <!-- Projections -->
+    <div id="pl-projections" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>
 
-    <!-- Verdict -->
-    <div id="impact-verdict" class="mt-4 p-4 rounded-xl text-center"></div>
+    <!-- Quality Proof -->
+    <div id="pl-quality" class="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.06]"></div>
   </section>
 
 </main>
@@ -599,165 +596,156 @@ function renderImpact(exec, rev, exp, funnel) {
   const calls = exec.total_calls;
   const period = parseInt($('periodSelect').value);
   const callsPerDay = calls / Math.max(period, 1);
-
-  // --- SCORECARD ---
-  function grade(value, thresholds) {
-    // thresholds: [A+, A, B, C] - value above threshold[0] = A+, etc
-    if (value >= thresholds[0]) return { letter: 'A+', color: '#22c55e', bg: 'rgba(34,197,94,0.15)' };
-    if (value >= thresholds[1]) return { letter: 'A', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' };
-    if (value >= thresholds[2]) return { letter: 'B', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' };
-    if (value >= thresholds[3]) return { letter: 'C', color: '#f97316', bg: 'rgba(249,115,22,0.1)' };
-    return { letter: 'D', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
-  }
-
-  const scores = [
-    { label: 'Cost Efficiency', value: 91.7, g: grade(91.7, [90,80,60,40]),
-      tip: '$1.50/call vs $18/call human = 91.7% cost reduction' },
-    { label: 'Availability', value: 100, g: grade(100, [99,90,70,50]),
-      tip: '24/7/365 coverage vs human 8-10 hrs/weekday' },
-    { label: 'Consistency', value: 100, g: grade(100, [99,90,70,50]),
-      tip: 'Floor price enforced on 100% of calls. Human reps vary by mood, fatigue, and experience.' },
-    { label: 'Rate Integrity', value: exec.avg_margin_pct, g: grade(exec.avg_margin_pct, [8,5,3,1]),
-      tip: `Retained ${exec.avg_margin_pct}% of loadboard rate on average. Target: 5-10%.` },
-    { label: 'Satisfaction', value: exp.satisfaction_rate, g: grade(exp.satisfaction_rate, [85,70,50,30]),
-      tip: `${exp.satisfaction_rate}% of carriers had positive or neutral experience.` },
-    { label: 'Conversion', value: exec.conversion_rate, g: grade(exec.conversion_rate, [40,30,20,10]),
-      tip: `${exec.conversion_rate}% of calls resulted in a booked load. Industry avg: 15-25%.` },
-  ];
-
-  $('scorecard').innerHTML = scores.map(s => `
-    <div class="tip rounded-xl p-3 text-center" style="background:${s.g.bg}; border:1px solid ${s.g.color}33">
-      <span class="tip-text">${s.tip}</span>
-      <p class="text-2xl font-bold" style="color:${s.g.color}">${s.g.letter}</p>
-      <p class="text-xs text-dark-300 mt-1">${s.label}</p>
-    </div>
-  `).join('');
-
-  // --- SCALE PROJECTIONS ---
-  const scenarios = [
-    { label: 'Current Pace', subtitle: `${callsPerDay.toFixed(1)} calls/day`, calls_mo: Math.round(callsPerDay * 30), multiplier: 1 },
-    { label: 'Growth Phase', subtitle: '50 calls/day', calls_mo: 1500, multiplier: 50 / Math.max(callsPerDay, 0.1) },
-    { label: 'Full Scale', subtitle: '200 calls/day', calls_mo: 6000, multiplier: 200 / Math.max(callsPerDay, 0.1) },
-  ];
-
-  const convRate = exec.conversion_rate / 100;
   const avgDeal = rev.avg_deal_size || 0;
+  const convRate = exec.conversion_rate / 100;
 
-  $('scale-projections').innerHTML = scenarios.map((s, i) => {
-    const moCalls = s.calls_mo;
-    const moRevenue = Math.round(moCalls * convRate * avgDeal);
-    const moSavings = Math.round(moCalls * (18 - 1.50));
-    const yrSavings = moSavings * 12;
-    const yrRevenue = moRevenue * 12;
-    const isHighlight = i === 2;
+  // Core financial metrics
+  const totalValue = exec.total_revenue + exec.cost_savings;
+  const revenuePerCall = calls > 0 ? exec.total_revenue / calls : 0;
+  const costPerAcquisition = funnel.booked > 0 ? exec.ai_cost / funnel.booked : 0;
+  const humanCostPerAcquisition = funnel.booked > 0 ? exec.human_cost_baseline / funnel.booked : 0;
 
-    return `<div class="rounded-xl p-5 ${isHighlight ? 'bg-accent/10 border-accent/30' : 'bg-white/[0.02] border-white/[0.05]'} border">
-      <div class="flex items-center justify-between mb-3">
-        <div>
-          <p class="font-semibold text-sm">${s.label}</p>
-          <p class="text-xs text-dark-400">${s.subtitle}</p>
-        </div>
-        ${isHighlight ? '<span class="impact-badge bg-accent/20 text-accent-light">Target</span>' : ''}
+  // Hero
+  $('pl-hero').innerHTML = `
+    <p class="text-xs text-dark-400 uppercase tracking-wider tip">Total Value Created
+      <span class="tip-text">Booked revenue + operational cost savings vs human reps. This is the total financial impact of the AI agent in the selected period.</span>
+    </p>
+    <p class="text-3xl font-bold text-success">${money(totalValue)}</p>
+  `;
+
+  // Revenue side
+  $('pl-revenue').innerHTML = `
+    <p class="text-xs text-dark-500 uppercase tracking-wider mb-4">Revenue</p>
+    <div class="space-y-3">
+      <div class="flex justify-between items-baseline">
+        <span class="text-sm text-dark-300">Booked revenue</span>
+        <span class="text-lg font-bold">${money(exec.total_revenue)}</span>
       </div>
-      <div class="space-y-2">
+      <div class="flex justify-between items-baseline">
+        <span class="text-sm text-dark-400 tip">Avg deal size<span class="tip-text">Total booked revenue ÷ number of booked calls</span></span>
+        <span class="text-sm font-semibold">${money(avgDeal)}</span>
+      </div>
+      <div class="flex justify-between items-baseline">
+        <span class="text-sm text-dark-400 tip">Rate retention<span class="tip-text">Average % of loadboard rate retained after negotiation. Higher = AI held firm on pricing.</span></span>
+        <span class="text-sm font-semibold text-accent-light">${pct(exec.avg_margin_pct)}</span>
+      </div>
+      <div class="flex justify-between items-baseline">
+        <span class="text-sm text-dark-400 tip">Margin saved<span class="tip-text">Sum of (loadboard rate − agreed price) across all booked deals. This is revenue retained through AI negotiation discipline.</span></span>
+        <span class="text-sm font-semibold text-success">${money(rev.total_margin_saved)}</span>
+      </div>
+    </div>
+  `;
+
+  // Cost side
+  $('pl-cost').innerHTML = `
+    <p class="text-xs text-dark-500 uppercase tracking-wider mb-4">Cost Analysis</p>
+    <div class="space-y-3">
+      <div class="flex justify-between items-baseline">
+        <span class="text-sm text-dark-400 tip">Human equivalent<span class="tip-text">${fmt(calls)} calls × $18/call (industry avg for carrier sales rep time)</span></span>
+        <span class="text-sm text-dark-300 line-through">${money(exec.human_cost_baseline)}</span>
+      </div>
+      <div class="flex justify-between items-baseline">
+        <span class="text-sm text-dark-300">AI operating cost</span>
+        <span class="text-lg font-bold text-accent-light">${money(exec.ai_cost)}</span>
+      </div>
+      <div class="border-t border-white/10 pt-3 flex justify-between items-baseline">
+        <span class="text-sm text-dark-300 font-medium">Net savings</span>
+        <span class="text-lg font-bold text-success">${money(exec.cost_savings)}</span>
+      </div>
+      <div class="flex justify-between items-baseline">
+        <span class="text-sm text-dark-400 tip">Cost reduction<span class="tip-text">(Human cost − AI cost) ÷ Human cost × 100</span></span>
+        <span class="text-sm font-semibold text-success">${exec.human_cost_baseline > 0 ? pct(Math.round((exec.cost_savings / exec.human_cost_baseline) * 100)) : '—'}</span>
+      </div>
+    </div>
+  `;
+
+  // Unit economics
+  $('pl-unit').innerHTML = `
+    <p class="text-xs text-dark-500 uppercase tracking-wider mb-4">Unit Economics</p>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div>
+        <p class="text-xs text-dark-400 tip">Revenue per call<span class="tip-text">Total booked revenue ÷ total calls (including non-booking calls). Shows revenue efficiency across all interactions.</span></p>
+        <p class="text-xl font-bold mt-1">${money(Math.round(revenuePerCall))}</p>
+      </div>
+      <div>
+        <p class="text-xs text-dark-400 tip">Cost per acquisition<span class="tip-text">AI operating cost ÷ booked deals. What it costs the AI to close one deal.</span></p>
+        <p class="text-xl font-bold mt-1 text-accent-light">${money(Math.round(costPerAcquisition))}</p>
+        <p class="text-xs text-dark-500 mt-0.5 line-through">${money(Math.round(humanCostPerAcquisition))} human</p>
+      </div>
+      <div>
+        <p class="text-xs text-dark-400 tip">Revenue per AI dollar<span class="tip-text">Total booked revenue ÷ AI operating cost. For every $1 spent on the AI, this much revenue was generated.</span></p>
+        <p class="text-xl font-bold mt-1">${exec.ai_cost > 0 ? '$' + Math.round(exec.total_revenue / exec.ai_cost) : '—'}</p>
+      </div>
+      <div>
+        <p class="text-xs text-dark-400 tip">Calls to close<span class="tip-text">Total calls ÷ booked deals. How many calls it takes on average to close one deal.</span></p>
+        <p class="text-xl font-bold mt-1">${funnel.booked > 0 ? (calls / funnel.booked).toFixed(1) : '—'}</p>
+      </div>
+    </div>
+  `;
+
+  // Projections
+  const scenarios = [
+    { label: 'Current Run Rate', daily: callsPerDay, highlight: false },
+    { label: 'Mid-Scale', daily: 50, highlight: false },
+    { label: 'Full Production', daily: 200, highlight: true },
+  ];
+
+  $('pl-projections').innerHTML = scenarios.map(s => {
+    const moCalls = Math.round(s.daily * 30);
+    const moRevenue = Math.round(moCalls * convRate * avgDeal);
+    const moSavings = Math.round(moCalls * 16.50); // $18 - $1.50
+    const yrSavings = moSavings * 12;
+    const ftes = (s.daily / 25).toFixed(1); // 25 calls/day per rep
+
+    return `<div class="rounded-xl p-4 ${s.highlight ? 'bg-accent/10 border-accent/30' : 'bg-white/[0.02] border-white/[0.06]'} border">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-sm font-semibold">${s.label}</p>
+        <span class="text-xs text-dark-400">${s.daily.toFixed(0)} calls/day</span>
+      </div>
+      <div class="space-y-2 text-sm">
         <div class="flex justify-between">
-          <span class="text-xs text-dark-400 tip">Monthly Calls<span class="tip-text">Projected calls per month at this rate: ${s.subtitle} × 30 days</span></span>
-          <span class="text-sm font-semibold">${fmt(moCalls)}</span>
+          <span class="text-dark-400">Monthly revenue</span>
+          <span class="font-medium">${money(moRevenue)}</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-xs text-dark-400 tip">Monthly Revenue<span class="tip-text">Monthly calls × ${pct(exec.conversion_rate)} conversion × ${money(avgDeal)} avg deal size</span></span>
-          <span class="text-sm font-semibold">${money(moRevenue)}</span>
+          <span class="text-dark-400">Monthly savings</span>
+          <span class="font-medium text-success">${money(moSavings)}</span>
+        </div>
+        <div class="flex justify-between border-t border-white/10 pt-2">
+          <span class="text-dark-300 font-medium tip">Annual savings<span class="tip-text">${fmt(moCalls)} calls/mo × $16.50 saved/call × 12 months. Replaces ${ftes} FTEs at ~$45K/yr each.</span></span>
+          <span class="font-bold text-success">${money(yrSavings)}/yr</span>
         </div>
         <div class="flex justify-between">
-          <span class="text-xs text-dark-400 tip">Monthly Savings<span class="tip-text">${fmt(moCalls)} calls × ($18 human − $1.50 AI) = ${money(moSavings)}/mo in operational savings</span></span>
-          <span class="text-sm font-semibold text-success">${money(moSavings)}</span>
-        </div>
-        <div class="border-t border-white/10 pt-2 mt-2">
-          <div class="flex justify-between">
-            <span class="text-xs text-dark-400 tip">Annual Savings<span class="tip-text">Monthly savings × 12 months. Direct labor cost reduction from AI handling carrier calls.</span></span>
-            <span class="text-sm font-bold text-success">${money(yrSavings)}/yr</span>
-          </div>
+          <span class="text-dark-400">FTE equivalent</span>
+          <span class="font-medium">${ftes} reps</span>
         </div>
       </div>
     </div>`;
   }).join('');
 
-  // --- FTE EQUIVALENCY + AI vs HUMAN ---
-  const humanCallsPerDay = 25; // avg human rep handles ~25 calls/day
-  const fteEquivalent = (callsPerDay / humanCallsPerDay).toFixed(1);
-  const fteAtScale = (200 / humanCallsPerDay).toFixed(1);
-  const avgSalary = 45000; // avg carrier sales rep salary
-
-  $('impact-comparison').innerHTML = `
-    <div class="bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
-      <h3 class="text-sm font-semibold text-dark-300 mb-4">Workforce Equivalency</h3>
-      <div class="flex items-center gap-4 mb-4">
-        <div class="text-center">
-          <p class="text-3xl font-bold text-accent-light tip">${fteEquivalent}
-            <span class="tip-text">Based on ${callsPerDay.toFixed(1)} calls/day ÷ 25 calls/day per human rep. A full-time carrier sales rep handles approximately 25 inbound calls per 8-hour shift.</span>
-          </p>
-          <p class="text-xs text-dark-400 mt-1">FTE today</p>
-        </div>
-        <div class="text-dark-600 text-2xl">→</div>
-        <div class="text-center">
-          <p class="text-3xl font-bold text-accent-light tip">${fteAtScale}
-            <span class="tip-text">At 200 calls/day (full scale), the AI replaces ${fteAtScale} full-time reps. At ~$45K salary each, that's ${money(Math.round(fteAtScale * avgSalary))}/yr in labor.</span>
-          </p>
-          <p class="text-xs text-dark-400 mt-1">FTE at scale</p>
-        </div>
+  // Quality proof - compact bar
+  $('pl-quality').innerHTML = `
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-dark-500 uppercase tracking-wider">Quality Check</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <div class="text-center">
+        <p class="text-sm font-bold ${exec.conversion_rate >= 30 ? 'text-success' : exec.conversion_rate >= 15 ? 'text-warning' : 'text-danger'}">${pct(exec.conversion_rate)}</p>
+        <p class="text-xs text-dark-500">Conversion</p>
       </div>
-      <div class="bg-dark-800 rounded-lg p-3 text-center">
-        <p class="text-xs text-dark-400">At full scale, this AI replaces</p>
-        <p class="text-lg font-bold text-success tip">${money(Math.round(fteAtScale * avgSalary))}/year
-          <span class="tip-text">${fteAtScale} FTEs × $45,000 avg annual salary for carrier sales reps. This is the labor cost you avoid by using AI.</span>
-        </p>
-        <p class="text-xs text-dark-400">in carrier sales labor</p>
+      <div class="text-center">
+        <p class="text-sm font-bold ${exp.satisfaction_rate >= 80 ? 'text-success' : exp.satisfaction_rate >= 60 ? 'text-warning' : 'text-danger'}">${pct(exp.satisfaction_rate)}</p>
+        <p class="text-xs text-dark-500">Satisfaction</p>
+      </div>
+      <div class="text-center">
+        <p class="text-sm font-bold text-success">100%</p>
+        <p class="text-xs text-dark-500">Floor Enforced</p>
+      </div>
+      <div class="text-center">
+        <p class="text-sm font-bold text-success">24/7</p>
+        <p class="text-xs text-dark-500">Availability</p>
       </div>
     </div>
-
-    <div class="bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
-      <h3 class="text-sm font-semibold text-dark-300 mb-4">What the AI Does That Humans Can't</h3>
-      <div class="space-y-4">
-        <div class="flex items-start gap-3">
-          <span class="text-success text-lg mt-0.5">⏰</span>
-          <div>
-            <p class="text-sm font-medium">Answers at 2 AM on a Sunday</p>
-            <p class="text-xs text-dark-400">Carriers don't wait for business hours. 24/7 coverage captures loads your competitors miss.</p>
-          </div>
-        </div>
-        <div class="flex items-start gap-3">
-          <span class="text-success text-lg mt-0.5">🎯</span>
-          <div>
-            <p class="text-sm font-medium">Never drops below floor price</p>
-            <p class="text-xs text-dark-400">Human reps cave under pressure, especially late Friday. AI enforces ${pct(12.5)} floor on every single call.</p>
-          </div>
-        </div>
-        <div class="flex items-start gap-3">
-          <span class="text-success text-lg mt-0.5">📊</span>
-          <div>
-            <p class="text-sm font-medium">Captures 100% of call data</p>
-            <p class="text-xs text-dark-400">Every call feeds this dashboard. Human reps log maybe 30% of interactions. You can't optimize what you don't measure.</p>
-          </div>
-        </div>
-        <div class="flex items-start gap-3">
-          <span class="text-success text-lg mt-0.5">📈</span>
-          <div>
-            <p class="text-sm font-medium">Scales without hiring</p>
-            <p class="text-xs text-dark-400">From 10 to 200 calls/day with zero ramp time, zero training, zero turnover.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // --- VERDICT ---
-  const yrSavingsNow = Math.round(callsPerDay * 30 * 12 * (18 - 1.5));
-  const yrSavingsScale = Math.round(6000 * 12 * (18 - 1.5));
-
-  $('impact-verdict').className = 'mt-4 p-5 rounded-xl border bg-gradient-to-r from-accent/5 to-success/5 border-accent/20';
-  $('impact-verdict').innerHTML = `
-    <p class="text-sm mb-2">At current pace, this AI agent projects to <strong class="text-success">${money(yrSavingsNow)}/year</strong> in operational savings.</p>
-    <p class="text-sm">Scaled to 200 calls/day, it replaces <strong class="text-accent-light">${fteAtScale} full-time reps</strong> and saves <strong class="text-success">${money(yrSavingsScale)}/year</strong> — while maintaining ${pct(exec.conversion_rate)} conversion and ${pct(exp.satisfaction_rate)} carrier satisfaction.</p>
   `;
 }
 
