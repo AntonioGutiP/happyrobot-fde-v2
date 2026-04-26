@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case, and_, distinct
 from datetime import datetime, timedelta
 from database import get_db
-from models import CallRecord, Load, CarrierPreference
+from models import CallRecord, Load, CarrierPreference, BookingConfirmation
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -92,6 +92,31 @@ async def dashboard_data(
     )
     avg_margin = round(float(margin_q.scalar() or 0), 1)
 
+    # Rate integrity: % of booked deals where agreed_price <= initial_rate (never overpaid)
+    integrity_total_q = await db.execute(
+        select(func.count(CallRecord.call_id))
+        .where(and_(
+            CallRecord.created_at >= cutoff,
+            CallRecord.outcome == "booked",
+            CallRecord.agreed_price.isnot(None),
+            CallRecord.initial_rate.isnot(None),
+        ))
+    )
+    integrity_total = integrity_total_q.scalar() or 0
+
+    integrity_held_q = await db.execute(
+        select(func.count(CallRecord.call_id))
+        .where(and_(
+            CallRecord.created_at >= cutoff,
+            CallRecord.outcome == "booked",
+            CallRecord.agreed_price.isnot(None),
+            CallRecord.initial_rate.isnot(None),
+            CallRecord.agreed_price <= CallRecord.initial_rate,
+        ))
+    )
+    integrity_held = integrity_held_q.scalar() or 0
+    rate_integrity = round(integrity_held / integrity_total * 100, 1) if integrity_total > 0 else 100.0
+
     # Cost savings
     human_cost = total_calls * HUMAN_COST_PER_CALL
     ai_cost = total_calls * AI_COST_PER_CALL
@@ -124,6 +149,7 @@ async def dashboard_data(
         "conversion_rate": conversion_rate,
         "total_revenue": total_revenue,
         "avg_margin_pct": avg_margin,
+        "rate_integrity": rate_integrity,
         "cost_savings": cost_savings,
         "roi_pct": roi_pct,
         "human_cost_baseline": human_cost,
@@ -473,6 +499,31 @@ async def dashboard_data(
     ]
 
     # ===================================================================
+    # BOOKING CONFIRMATIONS
+    # ===================================================================
+
+    bookings_q = await db.execute(
+        select(BookingConfirmation)
+        .order_by(BookingConfirmation.booked_at.desc())
+        .limit(10)
+    )
+    recent_bookings = [
+        {
+            "confirmation_number": b.confirmation_number,
+            "carrier_name": b.carrier_name,
+            "carrier_mc": b.carrier_mc,
+            "lane": f"{b.origin} → {b.destination}" if b.origin else None,
+            "agreed_rate": b.agreed_rate,
+            "loadboard_rate": b.loadboard_rate,
+            "rate_per_mile": round(b.agreed_rate / b.miles, 2) if b.agreed_rate and b.miles else None,
+            "cost_vs_listed": round(b.agreed_rate - b.loadboard_rate, 2) if b.agreed_rate and b.loadboard_rate else 0,
+            "rounds": b.negotiation_rounds,
+            "booked_at": b.booked_at.isoformat() if b.booked_at else None,
+        }
+        for b in bookings_q.scalars().all()
+    ]
+
+    # ===================================================================
     # ASSEMBLE RESPONSE
     # ===================================================================
 
@@ -486,4 +537,5 @@ async def dashboard_data(
         "rejections": rejections,
         "experience": experience,
         "recent_calls": recent_calls,
+        "bookings": recent_bookings,
     }

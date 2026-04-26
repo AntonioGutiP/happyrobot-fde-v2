@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # Negotiation defaults
-    floor_rate_pct: float = 0.85  # 85% of loadboard_rate = absolute floor
+    floor_rate_pct: float = 0.85  # 85% of loadboard_rate = absolute floor (carrier pushes down)
+    ceiling_rate_pct: float = 1.10  # 110% of loadboard_rate = max broker will stretch (carrier pushes up)
 
     @property
     def database_url_async(self) -> str:

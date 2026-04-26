@@ -109,3 +109,29 @@ class CarrierPreference(Base):
     min_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class BookingConfirmation(Base):
+    """Generated automatically when a load is booked.
+    Represents the booking confirmation that would be
+    sent to dispatch, emailed to carrier, and logged in TMS."""
+    __tablename__ = "booking_confirmations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    confirmation_number: Mapped[str] = mapped_column(String(20), unique=True)
+    call_id: Mapped[str] = mapped_column(String(50))
+    load_id: Mapped[str] = mapped_column(String(20))
+    carrier_mc: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    carrier_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    carrier_dot: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    origin: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    destination: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    agreed_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    loadboard_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    equipment_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    pickup_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivery_datetime: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    miles: Mapped[float | None] = mapped_column(Float, nullable=True)
+    negotiation_rounds: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), default="confirmed")
+    booked_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

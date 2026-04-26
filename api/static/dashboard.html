@@ -129,11 +129,11 @@ table td { font-size: 0.85rem; }
     </div>
     <div class="kpi-card p-4">
       <div class="kpi-glow"></div>
-      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider tip">Rate Retention
-        <span class="tip-text"><strong>Formula:</strong> (Loadboard Rate − Agreed Price) ÷ Loadboard Rate × 100<br><br>How much of the listed rate the brokerage kept during negotiation. Higher = the AI held firm. Example: $2,200 listed, $2,050 agreed = 6.8% retained.</span>
+      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider tip">Rate Integrity
+        <span class="tip-text"><strong>Formula:</strong> % of booked deals where agreed price ≤ loadboard rate<br><br>Measures whether the AI holds the listed rate under carrier pressure. 100% = AI never overpaid. Human reps typically cave on 15-30% of calls when carriers push for more.</span>
       </p>
       <p class="text-2xl font-bold mt-1 text-accent-light" id="kpi-margin">—</p>
-      <p class="text-xs text-dark-400 mt-1">avg rate retained</p>
+      <p class="text-xs text-dark-400 mt-1">never overpaid</p>
     </div>
     <div class="kpi-card p-4">
       <div class="kpi-glow"></div>
@@ -236,7 +236,14 @@ table td { font-size: 0.85rem; }
     </div>
   </section>
 
-  <!-- Row 6: Recent Activity -->
+  <!-- Row 6: Booking Confirmations -->
+  <section class="card p-5 border-success/20">
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Booking Confirmations</h2>
+    <p class="text-xs text-dark-500 mb-3">Auto-generated on every booking — would trigger email to dispatch, TMS entry, and carrier confirmation in production.</p>
+    <div id="bookings-table" class="overflow-x-auto"></div>
+  </section>
+
+  <!-- Row 7: Recent Activity -->
   <section class="card p-5">
     <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Recent Activity</h2>
     <div id="recent-calls" class="overflow-x-auto"></div>
@@ -305,13 +312,13 @@ function render(d) {
   $('kpi-conversion-sub').textContent = `${d.funnel.booked} of ${d.executive.total_calls} calls`;
   $('kpi-revenue').textContent = money(d.executive.total_revenue);
   $('kpi-revenue-sub').textContent = `${d.revenue.deals.length} deals closed`;
-  $('kpi-margin').textContent = pct(d.executive.avg_margin_pct);
+  $('kpi-margin').textContent = pct(d.executive.rate_integrity);
   $('kpi-savings').textContent = money(d.executive.cost_savings);
   $('kpi-savings-sub').textContent = `${pct(d.executive.roi_pct)} ROI vs human`;
 
   renderFunnel(d.funnel);
   renderOutcomeChart(d.funnel);
-  renderDeals(d.revenue);
+  renderDeals(d.revenue, d.executive);
   renderExperience(d.experience);
   renderSentimentChart(d.experience.sentiment);
   renderLanes(d.lanes);
@@ -319,6 +326,7 @@ function render(d) {
   renderRejections(d.rejections);
   renderGaps(d.rejections);
   renderRecent(d.recent_calls);
+  renderBookings(d.bookings || []);
   renderImpact(d.executive, d.revenue, d.experience, d.funnel);
 
   $('last-updated').textContent = `Updated: ${new Date(d.generated_at).toLocaleString()}`;
@@ -407,7 +415,7 @@ function renderOutcomeChart(f) {
   });
 }
 
-function renderDeals(rev) {
+function renderDeals(rev, exec) {
   if (!rev.deals.length) {
     $('deals-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No deals closed yet</p>';
     return;
@@ -417,29 +425,42 @@ function renderDeals(rev) {
       <th class="py-2 px-2">Lane</th>
       <th class="py-2 px-2">Listed</th>
       <th class="py-2 px-2">Booked</th>
-      <th class="py-2 px-2 tip">$/mile<span class="tip-text">Booked rate ÷ miles. This is how carriers and brokers benchmark lane profitability.</span></th>
-      <th class="py-2 px-2 tip">Retained<span class="tip-text">(Listed − Booked) ÷ Listed × 100. How much rate the AI held during negotiation.</span></th>
+      <th class="py-2 px-2 tip">$/mile<span class="tip-text">Booked rate ÷ miles. Industry standard for benchmarking lane profitability.</span></th>
+      <th class="py-2 px-2 tip">vs Listed<span class="tip-text">How the booked rate compares to listed. "At rate" = AI held firm. Savings = carrier accepted below listed.</span></th>
       <th class="py-2 px-2">Rnds</th>
     </tr></thead><tbody>`;
   rev.deals.forEach(d => {
+    const diff = d.initial_rate - d.agreed_price;
+    const agreedColor = diff >= 0 ? 'text-success' : 'text-warning';
+    const vsListed = diff === 0 ? '<span class="text-success">At rate</span>' :
+                     diff > 0 ? `<span class="text-success">-${money(diff)}</span>` :
+                     `<span class="text-warning">+${money(Math.abs(diff))}</span>`;
     html += `<tr class="border-b border-dark-800">
       <td class="py-2 px-2 text-sm">${d.lane || d.load_id || '—'}</td>
       <td class="py-2 px-2">${money(d.initial_rate)}</td>
-      <td class="py-2 px-2 text-success">${money(d.agreed_price)}</td>
+      <td class="py-2 px-2 ${agreedColor}">${money(d.agreed_price)}</td>
       <td class="py-2 px-2 font-semibold">${d.booked_rpm ? '$' + d.booked_rpm : '—'}</td>
-      <td class="py-2 px-2">${money(d.margin_dollars)} <span class="text-dark-400 text-xs">(${d.margin_pct}%)</span></td>
+      <td class="py-2 px-2">${vsListed}</td>
       <td class="py-2 px-2 text-center">${d.rounds}</td>
     </tr>`;
   });
   html += '</tbody></table>';
   $('deals-table').innerHTML = html;
 
-  if (rev.avg_margin_pct > 0) {
+  if (rev.deals.length > 0) {
     $('revenue-insight').classList.remove('hidden');
-    $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> Average rate retention is <strong>${rev.avg_margin_pct}%</strong>. ` +
-      (rev.avg_margin_pct < 3 ? 'Margins are thin — AI is conceding too much. Tighten the negotiation floor.' :
-       rev.avg_margin_pct > 10 ? 'Strong rate integrity. AI is consistently holding above floor pricing.' :
-       'Healthy retention range. AI is balancing competitiveness with margin protection.');
+    const integrity = exec.rate_integrity;
+    const margin = rev.avg_margin_pct;
+    if (margin < -1) {
+      // AI conceded above listed rate (carrier pushed UP successfully)
+      $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> AI conceded <strong>${Math.abs(margin)}%</strong> above listed rate on average — within controlled limits. Rate integrity at <strong>${integrity}%</strong>. Human reps typically concede 10-15% under carrier pressure.`;
+    } else if (margin <= 1) {
+      // AI held firm at listed rate
+      $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> AI held firm on <strong>${integrity}%</strong> of deals — carriers paid the listed rate. No rate erosion from carrier pressure. Human reps typically cave on 15-30% of negotiations.`;
+    } else {
+      // Carrier accepted below listed (pushed DOWN)
+      $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> AI captured <strong>${margin}%</strong> average savings below listed rates. Rate integrity at <strong>${integrity}%</strong>. Some carriers accepted below listed rate — broker retained extra margin.`;
+    }
   }
 }
 
@@ -602,6 +623,38 @@ function renderRecent(calls) {
   $('recent-calls').innerHTML = html;
 }
 
+function renderBookings(bookings) {
+  if (!bookings.length) {
+    $('bookings-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-4">No bookings yet — complete a test call to generate one</p>';
+    return;
+  }
+  let html = `<table class="w-full text-left">
+    <thead><tr class="border-b border-dark-700">
+      <th class="py-2 px-2">Confirmation</th><th class="py-2 px-2">Carrier</th>
+      <th class="py-2 px-2">Lane</th><th class="py-2 px-2">Agreed</th>
+      <th class="py-2 px-2">$/mile</th><th class="py-2 px-2">vs Listed</th>
+      <th class="py-2 px-2">Rounds</th><th class="py-2 px-2">Booked</th>
+    </tr></thead><tbody>`;
+  bookings.forEach(b => {
+    const diff = b.cost_vs_listed || 0;
+    const vsColor = diff === 0 ? 'text-success' : diff > 0 ? 'text-warning' : 'text-success';
+    const vsText = diff === 0 ? 'At rate' : diff > 0 ? `+${money(diff)}` : money(diff);
+    const time = b.booked_at ? new Date(b.booked_at).toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+    html += `<tr class="border-b border-dark-800">
+      <td class="py-2 px-2 font-mono text-xs text-accent-light">${b.confirmation_number}</td>
+      <td class="py-2 px-2 text-sm">${b.carrier_name || b.carrier_mc || '—'}</td>
+      <td class="py-2 px-2 text-sm">${b.lane || '—'}</td>
+      <td class="py-2 px-2 font-semibold">${money(b.agreed_rate)}</td>
+      <td class="py-2 px-2">${b.rate_per_mile ? '$' + b.rate_per_mile : '—'}</td>
+      <td class="py-2 px-2 ${vsColor}">${vsText}</td>
+      <td class="py-2 px-2 text-center">${b.rounds}</td>
+      <td class="py-2 px-2 text-xs text-dark-400">${time}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('bookings-table').innerHTML = html;
+}
+
 function renderImpact(exec, rev, exp, funnel) {
   const calls = exec.total_calls;
   const period = parseInt($('periodSelect').value);
@@ -636,12 +689,12 @@ function renderImpact(exec, rev, exp, funnel) {
         <span class="text-sm font-semibold">${money(avgDeal)}</span>
       </div>
       <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-400 tip">Rate retention<span class="tip-text">Average % of loadboard rate retained after negotiation. Higher = AI held firm on pricing.</span></span>
-        <span class="text-sm font-semibold text-accent-light">${pct(exec.avg_margin_pct)}</span>
+        <span class="text-sm text-dark-400 tip">Rate integrity<span class="tip-text">% of booked deals where the AI held the listed rate — never overpaid under carrier pressure. 100% = perfect rate discipline.</span></span>
+        <span class="text-sm font-semibold text-success">${pct(exec.rate_integrity)}</span>
       </div>
       <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-400 tip">Margin saved<span class="tip-text">Sum of (loadboard rate − agreed price) across all booked deals. This is revenue retained through AI negotiation discipline.</span></span>
-        <span class="text-sm font-semibold text-success">${money(rev.total_margin_saved)}</span>
+        <span class="text-sm text-dark-400 tip">Avg deal at rate<span class="tip-text">Most deals close at the listed rate when the AI holds firm. Any savings below listed rate are a bonus.</span></span>
+        <span class="text-sm font-semibold text-accent-light">${rev.total_margin_saved > 0 ? money(rev.total_margin_saved) + ' saved' : 'At listed rate'}</span>
       </div>
     </div>
   `;

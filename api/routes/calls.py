@@ -52,19 +52,45 @@ async def log_call(call: CallCreate, db: AsyncSession = Depends(get_db)):
         if duration:
             call.call_duration = duration
 
-    # If a load was booked, update its status
-    if call.outcome == CallOutcome.booked and call.load_id:
-        result = await db.execute(select(Load).where(Load.load_id == call.load_id))
-        load = result.scalar_one_or_none()
-        if load:
-            load.status = "booked"
-
-    # Build the DB record — exclude fields that aren't in the model
+    # Build the DB record first
     db_fields = call.model_dump(exclude={"call_summary", "equipment_discussed",
                                           "lane_origin", "lane_destination",
                                           "rejection_reason"})
     record = CallRecord(**db_fields)
     db.add(record)
+
+    # If a load was booked, update its status AND generate confirmation
+    booked_load = None
+    if call.outcome == CallOutcome.booked and call.load_id:
+        result = await db.execute(select(Load).where(Load.load_id == call.load_id))
+        booked_load = result.scalar_one_or_none()
+        if booked_load:
+            booked_load.status = "booked"
+
+            # Auto-generate booking confirmation
+            import random, string
+            conf_num = "BK-" + "".join(random.choices(string.digits, k=6))
+
+            from models import BookingConfirmation
+            confirmation = BookingConfirmation(
+                confirmation_number=conf_num,
+                call_id=record.call_id,
+                load_id=call.load_id,
+                carrier_mc=call.carrier_mc,
+                carrier_name=call.carrier_name,
+                carrier_dot=call.carrier_dot,
+                origin=booked_load.origin,
+                destination=booked_load.destination,
+                agreed_rate=call.agreed_price,
+                loadboard_rate=booked_load.loadboard_rate,
+                equipment_type=booked_load.equipment_type,
+                pickup_datetime=booked_load.pickup_datetime,
+                delivery_datetime=booked_load.delivery_datetime,
+                miles=booked_load.miles,
+                negotiation_rounds=call.num_rounds or 0,
+            )
+            db.add(confirmation)
+
     await db.commit()
     await db.refresh(record)
 
