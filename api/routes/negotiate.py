@@ -162,12 +162,15 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
     session = _sessions[req.load_id]
 
     def record(action, our_counter=None):
-        session["rounds"].append({
-            "round": req.current_round,
-            "carrier_offer": offer,
-            "action": action,
-            "our_counter": our_counter,
-        })
+        # Prevent duplicate recording if HappyRobot retries the same round
+        existing = [r for r in session["rounds"] if r["round"] == req.current_round]
+        if not existing:
+            session["rounds"].append({
+                "round": req.current_round,
+                "carrier_offer": offer,
+                "action": action,
+                "our_counter": our_counter,
+            })
 
     def build(action, guidance, counter=None, concession=0, **kw):
         counter_rpm = round(counter / miles, 2) if counter and miles > 0 else None
@@ -200,13 +203,13 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
             reasoning=f"Carrier offered ${offer:.0f}, at or below opening ${opening:.0f}.",
         )
 
-    # 2. Absurd ask (>150% of loadboard)
-    if offer > loadboard_rate * 1.50:
+    # 2. Absurd ask (>500% of loadboard — catches transcription errors like "30200")
+    if offer > loadboard_rate * 5.0:
         record("rejected_absurd")
         return build(
             "reject",
             f"That's way above what this lane pays. We're at {voice_dollars(opening)} — about {rpm} a mile.",
-            reasoning=f"${offer:.0f} exceeds 150% of loadboard ${loadboard_rate:.0f}.",
+            reasoning=f"${offer:.0f} exceeds 500% of loadboard ${loadboard_rate:.0f}.",
         )
 
     # 3. Exceeded 3 rounds
