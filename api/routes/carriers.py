@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
+from sqlalchemy.orm import selectinload
 from typing import Optional
 from database import get_db
-from models import CallRecord
+from models import CallRecord, Load
 from schemas import CarrierVerification
 from services.fmcsa import verify_carrier_by_mc, verify_carrier_by_dot, search_carrier_by_name
 
@@ -52,6 +53,7 @@ async def carrier_history(mc_number: str, db: AsyncSession = Depends(get_db)):
     # Find all calls from this carrier (match on raw or cleaned)
     result = await db.execute(
         select(CallRecord)
+        .options(selectinload(CallRecord.load))
         .where(
             (CallRecord.carrier_mc == clean_mc) |
             (CallRecord.carrier_mc == mc_number) |
