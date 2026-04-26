@@ -165,14 +165,18 @@ async def dashboard_data(
     )
     avg_deal_size = float(avg_deal_size_q.scalar() or 0)
 
-    # All booked deals with margin detail
+    # All booked deals with margin detail + per-mile
     deals_q = await db.execute(
         select(
             CallRecord.agreed_price,
             CallRecord.initial_rate,
             CallRecord.num_rounds,
             CallRecord.load_id,
+            Load.miles,
+            Load.origin,
+            Load.destination,
         )
+        .join(Load, CallRecord.load_id == Load.load_id, isouter=True)
         .where(and_(CallRecord.created_at >= cutoff, CallRecord.outcome == "booked"))
         .order_by(CallRecord.created_at.desc())
     )
@@ -181,13 +185,18 @@ async def dashboard_data(
     for row in deals_q.all():
         agreed = float(row[0]) if row[0] else 0
         initial = float(row[1]) if row[1] else 0
+        miles = float(row[4]) if row[4] else 0
         margin_dollars = initial - agreed
         margin_pct = round(margin_dollars / initial * 100, 1) if initial else 0
         total_margin_dollars += margin_dollars
         deals.append({
             "load_id": row[3],
+            "lane": f"{row[5]} → {row[6]}" if row[5] and row[6] else None,
+            "miles": miles,
             "initial_rate": initial,
             "agreed_price": agreed,
+            "listed_rpm": round(initial / miles, 2) if miles > 0 else None,
+            "booked_rpm": round(agreed / miles, 2) if miles > 0 else None,
             "margin_dollars": round(margin_dollars, 2),
             "margin_pct": margin_pct,
             "rounds": row[2],
@@ -209,7 +218,7 @@ async def dashboard_data(
     # 4. LANE INTELLIGENCE
     # ===================================================================
 
-    # Top lanes from calls (with load data)
+    # Top lanes from calls (with load data + per-mile rates)
     lane_q = await db.execute(
         select(
             Load.origin,
@@ -218,6 +227,13 @@ async def dashboard_data(
             func.count(CallRecord.call_id).label("total"),
             func.sum(case((CallRecord.outcome == "booked", 1), else_=0)).label("booked"),
             func.avg(Load.loadboard_rate).label("avg_rate"),
+            func.avg(Load.miles).label("avg_miles"),
+            func.avg(
+                case(
+                    (CallRecord.outcome == "booked", CallRecord.agreed_price),
+                    else_=None,
+                )
+            ).label("avg_booked_rate"),
         )
         .join(Load, CallRecord.load_id == Load.load_id)
         .where(CallRecord.created_at >= cutoff)
@@ -229,7 +245,14 @@ async def dashboard_data(
     for row in lane_q.all():
         total_lane = row[3]
         booked_lane = row[4]
+        avg_rate = float(row[5]) if row[5] else 0
+        avg_miles = float(row[6]) if row[6] else 1
+        avg_booked = float(row[7]) if row[7] else None
         conv = round(booked_lane / total_lane * 100, 1) if total_lane else 0
+
+        listed_rpm = round(avg_rate / avg_miles, 2) if avg_miles > 0 else 0
+        booked_rpm = round(avg_booked / avg_miles, 2) if avg_booked and avg_miles > 0 else None
+
         action = ""
         if conv >= 70:
             action = f"High conversion ({conv}%) — increase inventory on this lane"
@@ -247,7 +270,10 @@ async def dashboard_data(
             "total_calls": total_lane,
             "booked": booked_lane,
             "conversion_pct": conv,
-            "avg_rate": round(float(row[5]), 2) if row[5] else 0,
+            "avg_rate": round(avg_rate, 2),
+            "avg_miles": round(avg_miles, 0),
+            "listed_rpm": listed_rpm,
+            "booked_rpm": booked_rpm,
             "action": action,
         })
 

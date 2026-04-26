@@ -414,16 +414,19 @@ function renderDeals(rev) {
   }
   let html = `<table class="w-full text-left">
     <thead><tr class="border-b border-dark-700">
-      <th class="py-2 px-2">Load</th><th class="py-2 px-2 tip">List Rate<span class="tip-text">The loadboard rate — the price the brokerage listed the load at before negotiation.</span></th>
-      <th class="py-2 px-2 tip">Agreed<span class="tip-text">The final price the carrier accepted after negotiation.</span></th>
-      <th class="py-2 px-2 tip">Rate Retained<span class="tip-text"><strong>Formula:</strong> (List Rate − Agreed) ÷ List Rate × 100<br><br>The percentage of the listed rate the brokerage kept. This is the brokerage's negotiation performance — higher means the AI held the line better.</span></th>
-      <th class="py-2 px-2">Rounds</th>
+      <th class="py-2 px-2">Lane</th>
+      <th class="py-2 px-2">Listed</th>
+      <th class="py-2 px-2">Booked</th>
+      <th class="py-2 px-2 tip">$/mile<span class="tip-text">Booked rate ÷ miles. This is how carriers and brokers benchmark lane profitability.</span></th>
+      <th class="py-2 px-2 tip">Retained<span class="tip-text">(Listed − Booked) ÷ Listed × 100. How much rate the AI held during negotiation.</span></th>
+      <th class="py-2 px-2">Rnds</th>
     </tr></thead><tbody>`;
   rev.deals.forEach(d => {
     html += `<tr class="border-b border-dark-800">
-      <td class="py-2 px-2 font-mono text-xs">${d.load_id || '—'}</td>
+      <td class="py-2 px-2 text-sm">${d.lane || d.load_id || '—'}</td>
       <td class="py-2 px-2">${money(d.initial_rate)}</td>
       <td class="py-2 px-2 text-success">${money(d.agreed_price)}</td>
+      <td class="py-2 px-2 font-semibold">${d.booked_rpm ? '$' + d.booked_rpm : '—'}</td>
       <td class="py-2 px-2">${money(d.margin_dollars)} <span class="text-dark-400 text-xs">(${d.margin_pct}%)</span></td>
       <td class="py-2 px-2 text-center">${d.rounds}</td>
     </tr>`;
@@ -477,17 +480,24 @@ function renderLanes(lanes) {
   }
   let html = `<table class="w-full text-left">
     <thead><tr class="border-b border-dark-700">
-      <th class="py-2 px-2">Lane</th><th class="py-2 px-2">Equip</th><th class="py-2 px-2">Calls</th>
-      <th class="py-2 px-2">Booked</th><th class="py-2 px-2">Conv%</th><th class="py-2 px-2">Recommendation</th>
+      <th class="py-2 px-2">Lane</th><th class="py-2 px-2">Miles</th><th class="py-2 px-2">Calls</th>
+      <th class="py-2 px-2">Booked</th><th class="py-2 px-2">Conv%</th>
+      <th class="py-2 px-2 tip">Listed $/mi<span class="tip-text">Average loadboard rate per mile for this lane</span></th>
+      <th class="py-2 px-2 tip">Booked $/mi<span class="tip-text">Average booked (negotiated) rate per mile. Compare to listed to see negotiation impact.</span></th>
+      <th class="py-2 px-2">Action</th>
     </tr></thead><tbody>`;
   lanes.top_lanes.forEach(l => {
     const convColor = l.conversion_pct >= 70 ? 'text-success' : l.conversion_pct >= 40 ? 'text-warning' : 'text-danger';
+    const rpmDiff = l.booked_rpm && l.listed_rpm ? l.listed_rpm - l.booked_rpm : null;
+    const rpmColor = rpmDiff !== null ? (rpmDiff < 0.20 ? 'text-success' : rpmDiff < 0.50 ? 'text-warning' : 'text-danger') : '';
     html += `<tr class="border-b border-dark-800">
       <td class="py-2 px-2 text-sm">${l.origin} → ${l.destination}</td>
-      <td class="py-2 px-2 text-xs">${l.equipment_type}</td>
+      <td class="py-2 px-2 text-xs text-dark-400">${l.avg_miles ? Math.round(l.avg_miles) : '—'}</td>
       <td class="py-2 px-2 text-center">${l.total_calls}</td>
       <td class="py-2 px-2 text-center">${l.booked}</td>
       <td class="py-2 px-2 ${convColor} font-semibold">${l.conversion_pct}%</td>
+      <td class="py-2 px-2">$${l.listed_rpm || '—'}</td>
+      <td class="py-2 px-2 ${rpmColor} font-semibold">${l.booked_rpm ? '$' + l.booked_rpm : '—'}</td>
       <td class="py-2 px-2"><span class="action-tag text-xs px-2 py-0.5 rounded-full">${l.action.split('—')[0].trim()}</span></td>
     </tr>`;
   });
