@@ -74,8 +74,16 @@ class CallCreate(BaseModel):
     fmcsa_verified: bool = False
     fmcsa_status: Optional[str] = None
     extracted_data: Optional[dict] = None
+    # New: agent provides a brief summary for extracted_data
+    call_summary: Optional[str] = None
+    equipment_discussed: Optional[str] = None
+    lane_origin: Optional[str] = None
+    lane_destination: Optional[str] = None
+    rejection_reason: Optional[str] = None
 
-    @field_validator("carrier_mc", "carrier_dot", "fmcsa_status", "load_id", "carrier_name", mode="before")
+    @field_validator("carrier_mc", "carrier_dot", "fmcsa_status", "load_id", "carrier_name",
+                     "call_summary", "equipment_discussed", "lane_origin", "lane_destination",
+                     "rejection_reason", mode="before")
     @classmethod
     def coerce_to_str(cls, v):
         if v is None or v == "":

@@ -16,7 +16,12 @@ async def verify_carrier(mc_number: str):
     """
     Verify carrier eligibility via FMCSA QCMobile API.
     Used by HappyRobot agent during calls.
+    Also records call start time for duration tracking.
     """
+    from routes.negotiate import record_call_start
+    clean_mc = mc_number.upper().replace("MC-", "").replace("MC", "").strip().lstrip("0")
+    record_call_start(clean_mc)
+    record_call_start(mc_number)  # record both forms
     return await verify_carrier_by_mc(mc_number)
 
 

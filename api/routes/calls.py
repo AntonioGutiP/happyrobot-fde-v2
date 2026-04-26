@@ -15,10 +15,43 @@ async def log_call(call: CallCreate, db: AsyncSession = Depends(get_db)):
     """
     Log a call record. Used by HappyRobot workflow after each call ends.
 
-    The post-call workflow classifies outcome + sentiment, extracts
-    data, then POSTs here. This is the integration link between
-    the agent and the dashboard.
+    Auto-enrichment:
+    - counter_offers: pulled from server-side negotiation session
+    - extracted_data: assembled from agent-provided fields
+    - call_duration: estimated from first API interaction timestamp
     """
+    from routes.negotiate import get_session, get_call_duration, _negotiation_sessions, _call_start_times
+
+    # --- Auto-populate counter_offers from negotiate session ---
+    if call.load_id and call.num_rounds > 0 and not call.counter_offers:
+        session_rounds = get_session(call.load_id)
+        if session_rounds:
+            call.counter_offers = session_rounds
+
+    # --- Auto-populate extracted_data from agent-provided fields ---
+    extracted = {}
+    if call.call_summary:
+        extracted["summary"] = call.call_summary
+    if call.equipment_discussed:
+        extracted["equipment"] = call.equipment_discussed
+    if call.lane_origin and call.lane_destination:
+        extracted["lane"] = f"{call.lane_origin} → {call.lane_destination}"
+    elif call.lane_origin:
+        extracted["origin_requested"] = call.lane_origin
+    if call.rejection_reason:
+        extracted["rejection_reason"] = call.rejection_reason
+    if call.outcome == "no_match" and call.lane_origin:
+        extracted["unmet_demand"] = True
+
+    if extracted:
+        call.extracted_data = extracted
+
+    # --- Auto-populate call_duration ---
+    if not call.call_duration and call.carrier_mc:
+        duration = get_call_duration(call.carrier_mc)
+        if duration:
+            call.call_duration = duration
+
     # If a load was booked, update its status
     if call.outcome == CallOutcome.booked and call.load_id:
         result = await db.execute(select(Load).where(Load.load_id == call.load_id))
@@ -26,10 +59,20 @@ async def log_call(call: CallCreate, db: AsyncSession = Depends(get_db)):
         if load:
             load.status = "booked"
 
-    record = CallRecord(**call.model_dump())
+    # Build the DB record — exclude fields that aren't in the model
+    db_fields = call.model_dump(exclude={"call_summary", "equipment_discussed",
+                                          "lane_origin", "lane_destination",
+                                          "rejection_reason"})
+    record = CallRecord(**db_fields)
     db.add(record)
     await db.commit()
     await db.refresh(record)
+
+    # Clean up negotiation session and call timer
+    if call.load_id and call.load_id in _negotiation_sessions:
+        del _negotiation_sessions[call.load_id]
+    if call.carrier_mc and call.carrier_mc in _call_start_times:
+        del _call_start_times[call.carrier_mc]
 
     return record
 
