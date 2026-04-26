@@ -205,3 +205,30 @@ async def call_stats(
         top_lanes=top_lanes,
         rejection_reasons=rejection_reasons,
     )
+
+
+@router.delete("/{call_id}")
+async def delete_call(call_id: str, db: AsyncSession = Depends(get_db)):
+    """Delete a specific call record. Used for testing/cleanup."""
+    result = await db.execute(select(CallRecord).where(CallRecord.call_id == call_id))
+    record = result.scalar_one_or_none()
+    if not record:
+        raise HTTPException(status_code=404, detail="Call not found")
+    await db.delete(record)
+    await db.commit()
+    return {"deleted": call_id}
+
+
+@router.delete("")
+async def delete_last_call(db: AsyncSession = Depends(get_db)):
+    """Delete the most recent call record. Used for testing/cleanup."""
+    result = await db.execute(
+        select(CallRecord).order_by(CallRecord.created_at.desc()).limit(1)
+    )
+    record = result.scalar_one_or_none()
+    if not record:
+        raise HTTPException(status_code=404, detail="No calls to delete")
+    call_id = record.call_id
+    await db.delete(record)
+    await db.commit()
+    return {"deleted": call_id, "message": "Most recent call deleted"}
