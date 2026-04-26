@@ -133,7 +133,7 @@ table td { font-size: 0.85rem; }
         <span class="tip-text"><strong>Formula:</strong> % of booked deals where agreed price ≤ loadboard rate<br><br>Measures whether the AI holds the listed rate under carrier pressure. 100% = AI never overpaid. Human reps typically cave on 15-30% of calls when carriers push for more.</span>
       </p>
       <p class="text-2xl font-bold mt-1 text-accent-light" id="kpi-margin">—</p>
-      <p class="text-xs text-dark-400 mt-1">never overpaid</p>
+      <p class="text-xs text-dark-400 mt-1">held at listed rate</p>
     </div>
     <div class="kpi-card p-4">
       <div class="kpi-glow"></div>
@@ -229,7 +229,7 @@ table td { font-size: 0.85rem; }
     <div class="card p-5">
       <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-1">Negotiation Gap Analysis</h2>
       <p class="text-xs text-dark-500 mb-3 tip">How close were failed deals to closing?
-        <span class="tip-text">Shows the floor price (87.5% of loadboard rate) and how many rounds were attempted. If gaps are consistently small, widening the floor by 2-3% could close more deals.</span>
+        <span class="tip-text">Shows the ceiling price (max the broker will stretch) and how many rounds were attempted. If carriers are consistently close to the ceiling, increasing it by 2-3% on high-demand lanes could close more deals.</span>
       </p>
       <div id="gap-table" class="overflow-x-auto"></div>
       <div id="gap-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
@@ -386,7 +386,7 @@ function renderFunnel(f) {
     $('funnel-insight').classList.remove('hidden');
     $('funnel-insight').innerHTML = `<span class="text-accent-light font-semibold">🎯 Focus Area:</span> Biggest drop-off is at <strong>${drops[0].name}</strong> (${drops[0].lost} calls lost). ` +
       (drops[0].name === 'load matching' ? 'Source more inventory for requested lanes.' :
-       drops[0].name === 'negotiation' ? 'Review floor pricing — failed deals may be closeable.' :
+       drops[0].name === 'negotiation' ? 'Review ceiling pricing — carriers may need slightly higher rates on these lanes.' :
        drops[0].name === 'carrier interest' ? 'Improve load pitch quality or rate competitiveness.' :
        'Review carrier eligibility requirements.');
   }
@@ -569,14 +569,14 @@ function renderGaps(rej) {
   }
   let html = `<table class="w-full text-left">
     <thead><tr class="border-b border-dark-700">
-      <th class="py-2 px-2">Load</th><th class="py-2 px-2">List Rate</th><th class="py-2 px-2">Floor</th>
-      <th class="py-2 px-2">Rounds</th><th class="py-2 px-2">Max Flex</th>
+      <th class="py-2 px-2">Load</th><th class="py-2 px-2">Listed</th><th class="py-2 px-2">Ceiling</th>
+      <th class="py-2 px-2">Rounds</th><th class="py-2 px-2">Max Stretch</th>
     </tr></thead><tbody>`;
   rej.negotiation_gaps.forEach(g => {
     html += `<tr class="border-b border-dark-800">
       <td class="py-2 px-2 font-mono text-xs">${g.load_id || '—'}</td>
       <td class="py-2 px-2">${money(g.initial_rate)}</td>
-      <td class="py-2 px-2">${money(g.floor_price)}</td>
+      <td class="py-2 px-2">${money(g.ceiling_price)}</td>
       <td class="py-2 px-2 text-center">${g.rounds}</td>
       <td class="py-2 px-2">${g.max_concession_pct}%</td>
     </tr>`;
@@ -586,8 +586,8 @@ function renderGaps(rej) {
 
   if (rej.avg_negotiation_gap_pct > 0) {
     $('gap-insight').classList.remove('hidden');
-    $('gap-insight').innerHTML = `<span class="text-accent-light font-semibold">📐 Insight:</span> Average floor flexibility is <strong>${rej.avg_negotiation_gap_pct}%</strong>. ` +
-      (rej.avg_negotiation_gap_pct < 8 ? 'Floor is tight — widening by 2-3% could close more deals.' : 'Reasonable range. Current floor levels are defensible.');
+    $('gap-insight').innerHTML = `<span class="text-accent-light font-semibold">📐 Insight:</span> Average ceiling stretch is <strong>${rej.avg_negotiation_gap_pct}%</strong>. ` +
+      (rej.avg_negotiation_gap_pct < 5 ? 'Ceiling is tight — increasing by 2-3% on high-demand lanes could close more deals.' : 'Reasonable stretch range. Current ceiling levels are working.');
   }
 }
 
@@ -797,7 +797,7 @@ function renderImpact(exec, rev, exp, funnel) {
       </div>
       <div class="text-center">
         <p class="text-sm font-bold text-success">100%</p>
-        <p class="text-xs text-dark-500">Floor Enforced</p>
+        <p class="text-xs text-dark-500">Ceiling Held</p>
       </div>
       <div class="text-center">
         <p class="text-sm font-bold text-success">24/7</p>

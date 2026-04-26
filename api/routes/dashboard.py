@@ -377,14 +377,14 @@ async def dashboard_data(
     gap_count = 0
     for row in gap_q.all():
         initial = float(row[0]) if row[0] else 0
-        # For rejected deals, agreed_price might be null — use the counter_offer data
-        # The gap is estimated from initial_rate and floor (87.5%)
-        floor = initial * 0.875
-        gap_pct = round((initial - floor) / initial * 100, 1) if initial else 0
+        # For failed upward negotiations: carrier wanted more than our ceiling
+        # Ceiling = initial × 1.05 (firm). Show how far apart we were.
+        ceiling = initial * 1.05  # firm ceiling estimate
+        gap_pct = round((ceiling - initial) / initial * 100, 1) if initial else 0
         negotiation_gaps.append({
             "load_id": row[3],
             "initial_rate": initial,
-            "floor_price": round(floor, 2),
+            "ceiling_price": round(ceiling, 2),
             "rounds": row[2],
             "max_concession_pct": gap_pct,
         })
@@ -399,7 +399,7 @@ async def dashboard_data(
     if total_rejections > 0:
         biggest_reason = max(rejection_breakdown, key=rejection_breakdown.get)
         if biggest_reason == "rejected":
-            rejection_insight = "Most losses come from negotiation failures. Consider adjusting floor pricing if gaps are consistently small."
+            rejection_insight = "Most losses come from negotiation failures. Carriers wanted more than the ceiling allows. Consider increasing ceiling on high-demand lanes."
         elif biggest_reason == "no_match":
             rejection_insight = "Many carriers can't find loads. Check unmet demand data and source inventory for high-request lanes."
         elif biggest_reason == "carrier_declined":

@@ -131,13 +131,13 @@ async def get_market_context(load_id: str, db: AsyncSession = Depends(get_db)):
     # Determine pricing recommendation
     if decline_count >= 3:
         pricing_strategy = "flexible"
-        recommendation = "This load has been declined multiple times. Consider lowering the floor price to close a deal."
+        recommendation = "This load has been declined multiple times. Be willing to stretch up to 10% above listed to close."
     elif decline_count >= 1 and pitch_count >= 2:
         pricing_strategy = "moderate"
-        recommendation = "Some carrier interest but no booking yet. Small concessions may help close."
+        recommendation = "Some carrier interest but no booking yet. Stretch up to 7% if carrier pushes."
     else:
         pricing_strategy = "firm"
-        recommendation = "Fresh load with limited exposure. Hold firm on pricing."
+        recommendation = "Fresh load with limited exposure. Hold firm — stretch only up to 5% if needed."
 
     return {
         "load_id": load_id,

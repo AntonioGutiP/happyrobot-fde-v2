@@ -20,7 +20,7 @@ async def log_call(call: CallCreate, db: AsyncSession = Depends(get_db)):
     - extracted_data: assembled from agent-provided fields
     - call_duration: estimated from first API interaction timestamp
     """
-    from routes.negotiate import get_session, get_call_duration, _negotiation_sessions, _call_start_times
+    from routes.negotiate import get_session, get_call_duration, _sessions, _call_starts
 
     # --- Auto-populate counter_offers from negotiate session ---
     if call.load_id and call.num_rounds > 0 and not call.counter_offers:
@@ -95,10 +95,10 @@ async def log_call(call: CallCreate, db: AsyncSession = Depends(get_db)):
     await db.refresh(record)
 
     # Clean up negotiation session and call timer
-    if call.load_id and call.load_id in _negotiation_sessions:
-        del _negotiation_sessions[call.load_id]
-    if call.carrier_mc and call.carrier_mc in _call_start_times:
-        del _call_start_times[call.carrier_mc]
+    if call.load_id and call.load_id in _sessions:
+        del _sessions[call.load_id]
+    if call.carrier_mc and call.carrier_mc in _call_starts:
+        del _call_starts[call.carrier_mc]
 
     return record
 
