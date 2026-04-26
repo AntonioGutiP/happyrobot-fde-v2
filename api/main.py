@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import get_settings
 from database import engine, Base, async_session
 from middleware import APIKeyMiddleware
-from routes import health, loads, carriers, calls, preferences
+from routes import health, loads, carriers, calls, preferences, dashboard
 from seed_data import seed_database
 
 logging.basicConfig(level=logging.INFO)
@@ -76,6 +76,7 @@ app.include_router(loads.router, prefix="/api/v1")
 app.include_router(carriers.router, prefix="/api/v1")
 app.include_router(calls.router, prefix="/api/v1")
 app.include_router(preferences.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")
 
 
 @app.get("/")
@@ -84,4 +85,14 @@ async def root():
         "service": "HappyRobot Carrier Sales API",
         "version": "1.0.0",
         "docs": "/docs",
+        "dashboard": "/dashboard",
     }
+
+
+@app.get("/dashboard", include_in_schema=False)
+async def serve_dashboard():
+    """Serve the business dashboard."""
+    from fastapi.responses import FileResponse
+    import os
+    html_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
+    return FileResponse(html_path, media_type="text/html")

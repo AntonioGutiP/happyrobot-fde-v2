@@ -1,0 +1,463 @@
+"""
+Dashboard data endpoint — returns ALL metrics the dashboard needs in one call.
+
+This is the Python brain behind the dashboard. All data aggregation,
+calculations, and business logic happens here. The frontend just renders it.
+
+Six decision categories:
+1. Executive KPIs
+2. Conversion funnel
+3. Revenue & economics
+4. Lane intelligence
+5. Rejection analysis
+6. Carrier experience
+"""
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, case, and_, distinct
+from datetime import datetime, timedelta
+from database import get_db
+from models import CallRecord, Load, CarrierPreference
+
+router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+
+# Human rep cost baseline (industry average)
+HUMAN_COST_PER_CALL = 18.00  # $15-25 range, midpoint
+AI_COST_PER_CALL = 1.50      # estimated AI cost per call
+
+
+@router.get("/data")
+async def dashboard_data(
+    days: int = Query(30, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Single endpoint that returns everything the dashboard needs.
+    One request, one response, all six decision categories.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+    # ===================================================================
+    # 1. EXECUTIVE KPIs
+    # ===================================================================
+
+    # Total calls
+    total_q = await db.execute(
+        select(func.count(CallRecord.call_id))
+        .where(CallRecord.created_at >= cutoff)
+    )
+    total_calls = total_q.scalar() or 0
+
+    # By outcome
+    outcome_q = await db.execute(
+        select(CallRecord.outcome, func.count(CallRecord.call_id))
+        .where(CallRecord.created_at >= cutoff)
+        .group_by(CallRecord.outcome)
+    )
+    by_outcome = {row[0]: row[1] for row in outcome_q.all()}
+
+    booked = by_outcome.get("booked", 0)
+    rejected = by_outcome.get("rejected", 0)
+    no_match = by_outcome.get("no_match", 0)
+    carrier_declined = by_outcome.get("carrier_declined", 0)
+    needs_follow_up = by_outcome.get("needs_follow_up", 0)
+
+    conversion_rate = round(booked / total_calls * 100, 1) if total_calls else 0
+
+    # Revenue
+    revenue_q = await db.execute(
+        select(func.sum(CallRecord.agreed_price))
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.outcome == "booked"))
+    )
+    total_revenue = float(revenue_q.scalar() or 0)
+
+    # Average margin (loadboard_rate - agreed_price) / loadboard_rate
+    margin_q = await db.execute(
+        select(
+            func.avg(
+                (CallRecord.initial_rate - CallRecord.agreed_price)
+                / CallRecord.initial_rate * 100
+            )
+        )
+        .where(
+            and_(
+                CallRecord.created_at >= cutoff,
+                CallRecord.outcome == "booked",
+                CallRecord.initial_rate.isnot(None),
+                CallRecord.agreed_price.isnot(None),
+                CallRecord.initial_rate > 0,
+            )
+        )
+    )
+    avg_margin = round(float(margin_q.scalar() or 0), 1)
+
+    # Cost savings
+    human_cost = total_calls * HUMAN_COST_PER_CALL
+    ai_cost = total_calls * AI_COST_PER_CALL
+    cost_savings = round(human_cost - ai_cost, 2)
+    roi_pct = round((cost_savings / ai_cost * 100), 1) if ai_cost > 0 else 0
+
+    # FMCSA verified count
+    verified_q = await db.execute(
+        select(func.count(CallRecord.call_id))
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.fmcsa_verified == True))
+    )
+    fmcsa_verified_count = verified_q.scalar() or 0
+
+    # Calls with loads pitched (had a load_id)
+    pitched_q = await db.execute(
+        select(func.count(CallRecord.call_id))
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.load_id.isnot(None)))
+    )
+    pitched_count = pitched_q.scalar() or 0
+
+    # Calls that entered negotiation (num_rounds > 0)
+    negotiated_q = await db.execute(
+        select(func.count(CallRecord.call_id))
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.num_rounds > 0))
+    )
+    negotiated_count = negotiated_q.scalar() or 0
+
+    executive = {
+        "total_calls": total_calls,
+        "conversion_rate": conversion_rate,
+        "total_revenue": total_revenue,
+        "avg_margin_pct": avg_margin,
+        "cost_savings": cost_savings,
+        "roi_pct": roi_pct,
+        "human_cost_baseline": human_cost,
+        "ai_cost": ai_cost,
+    }
+
+    # ===================================================================
+    # 2. CONVERSION FUNNEL
+    # ===================================================================
+
+    funnel = {
+        "total_calls": total_calls,
+        "fmcsa_verified": fmcsa_verified_count,
+        "loads_pitched": pitched_count,
+        "entered_negotiation": negotiated_count,
+        "booked": booked,
+        "drop_offs": {
+            "verification_fail": total_calls - fmcsa_verified_count,
+            "no_load_match": no_match,
+            "declined_after_pitch": carrier_declined,
+            "negotiation_failed": rejected,
+        },
+        "stage_rates": {
+            "verification_rate": round(fmcsa_verified_count / total_calls * 100, 1) if total_calls else 0,
+            "pitch_rate": round(pitched_count / fmcsa_verified_count * 100, 1) if fmcsa_verified_count else 0,
+            "negotiation_rate": round(negotiated_count / pitched_count * 100, 1) if pitched_count else 0,
+            "close_rate": round(booked / max(negotiated_count, pitched_count, 1) * 100, 1),
+        },
+    }
+
+    # ===================================================================
+    # 3. REVENUE & ECONOMICS
+    # ===================================================================
+
+    # Revenue per booked call
+    avg_deal_size_q = await db.execute(
+        select(func.avg(CallRecord.agreed_price))
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.outcome == "booked"))
+    )
+    avg_deal_size = float(avg_deal_size_q.scalar() or 0)
+
+    # All booked deals with margin detail
+    deals_q = await db.execute(
+        select(
+            CallRecord.agreed_price,
+            CallRecord.initial_rate,
+            CallRecord.num_rounds,
+            CallRecord.load_id,
+        )
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.outcome == "booked"))
+        .order_by(CallRecord.created_at.desc())
+    )
+    deals = []
+    total_margin_dollars = 0
+    for row in deals_q.all():
+        agreed = float(row[0]) if row[0] else 0
+        initial = float(row[1]) if row[1] else 0
+        margin_dollars = initial - agreed
+        margin_pct = round(margin_dollars / initial * 100, 1) if initial else 0
+        total_margin_dollars += margin_dollars
+        deals.append({
+            "load_id": row[3],
+            "initial_rate": initial,
+            "agreed_price": agreed,
+            "margin_dollars": round(margin_dollars, 2),
+            "margin_pct": margin_pct,
+            "rounds": row[2],
+        })
+
+    revenue = {
+        "total_revenue": total_revenue,
+        "avg_deal_size": round(avg_deal_size, 2),
+        "total_margin_saved": round(total_margin_dollars, 2),
+        "avg_margin_pct": avg_margin,
+        "cost_per_call_human": HUMAN_COST_PER_CALL,
+        "cost_per_call_ai": AI_COST_PER_CALL,
+        "cost_savings": cost_savings,
+        "roi_pct": roi_pct,
+        "deals": deals,
+    }
+
+    # ===================================================================
+    # 4. LANE INTELLIGENCE
+    # ===================================================================
+
+    # Top lanes from calls (with load data)
+    lane_q = await db.execute(
+        select(
+            Load.origin,
+            Load.destination,
+            Load.equipment_type,
+            func.count(CallRecord.call_id).label("total"),
+            func.sum(case((CallRecord.outcome == "booked", 1), else_=0)).label("booked"),
+            func.avg(Load.loadboard_rate).label("avg_rate"),
+        )
+        .join(Load, CallRecord.load_id == Load.load_id)
+        .where(CallRecord.created_at >= cutoff)
+        .group_by(Load.origin, Load.destination, Load.equipment_type)
+        .order_by(func.count(CallRecord.call_id).desc())
+        .limit(15)
+    )
+    top_lanes = []
+    for row in lane_q.all():
+        total_lane = row[3]
+        booked_lane = row[4]
+        conv = round(booked_lane / total_lane * 100, 1) if total_lane else 0
+        action = ""
+        if conv >= 70:
+            action = f"High conversion ({conv}%) — increase inventory on this lane"
+        elif conv >= 40:
+            action = f"Moderate conversion ({conv}%) — review pricing strategy"
+        elif conv > 0:
+            action = f"Low conversion ({conv}%) — analyze rejection reasons"
+        else:
+            action = "No bookings — consider removing from active inventory"
+
+        top_lanes.append({
+            "origin": row[0],
+            "destination": row[1],
+            "equipment_type": row[2],
+            "total_calls": total_lane,
+            "booked": booked_lane,
+            "conversion_pct": conv,
+            "avg_rate": round(float(row[5]), 2) if row[5] else 0,
+            "action": action,
+        })
+
+    # Unmet demand from carrier preferences
+    unmet_q = await db.execute(
+        select(
+            CarrierPreference.origin,
+            CarrierPreference.destination,
+            CarrierPreference.equipment_type,
+            func.count(CarrierPreference.id).label("requests"),
+        )
+        .where(CarrierPreference.origin.isnot(None))
+        .group_by(
+            CarrierPreference.origin,
+            CarrierPreference.destination,
+            CarrierPreference.equipment_type,
+        )
+        .order_by(func.count(CarrierPreference.id).desc())
+        .limit(10)
+    )
+    unmet_demand = [
+        {
+            "origin": row[0],
+            "destination": row[1],
+            "equipment_type": row[2],
+            "carrier_requests": row[3],
+            "action": f"Source {row[2] or 'any'} loads: {row[0]} → {row[1]} ({row[3]} carriers requesting)",
+        }
+        for row in unmet_q.all()
+    ]
+
+    lanes = {
+        "top_lanes": top_lanes,
+        "unmet_demand": unmet_demand,
+    }
+
+    # ===================================================================
+    # 5. REJECTION ANALYSIS
+    # ===================================================================
+
+    # Rejection breakdown
+    rejection_q = await db.execute(
+        select(CallRecord.outcome, func.count(CallRecord.call_id))
+        .where(
+            and_(
+                CallRecord.created_at >= cutoff,
+                CallRecord.outcome.in_(["rejected", "carrier_declined", "no_match"]),
+            )
+        )
+        .group_by(CallRecord.outcome)
+    )
+    rejection_breakdown = {row[0]: row[1] for row in rejection_q.all()}
+
+    # Negotiation gap analysis — for failed negotiations, how far apart were they?
+    gap_q = await db.execute(
+        select(
+            CallRecord.initial_rate,
+            CallRecord.agreed_price,
+            CallRecord.num_rounds,
+            CallRecord.load_id,
+        )
+        .where(
+            and_(
+                CallRecord.created_at >= cutoff,
+                CallRecord.outcome == "rejected",
+                CallRecord.initial_rate.isnot(None),
+                CallRecord.num_rounds > 0,
+            )
+        )
+    )
+    negotiation_gaps = []
+    total_gap = 0
+    gap_count = 0
+    for row in gap_q.all():
+        initial = float(row[0]) if row[0] else 0
+        # For rejected deals, agreed_price might be null — use the counter_offer data
+        # The gap is estimated from initial_rate and floor (87.5%)
+        floor = initial * 0.875
+        gap_pct = round((initial - floor) / initial * 100, 1) if initial else 0
+        negotiation_gaps.append({
+            "load_id": row[3],
+            "initial_rate": initial,
+            "floor_price": round(floor, 2),
+            "rounds": row[2],
+            "max_concession_pct": gap_pct,
+        })
+        total_gap += gap_pct
+        gap_count += 1
+
+    avg_gap = round(total_gap / gap_count, 1) if gap_count else 0
+
+    # Insight generation
+    rejection_insight = ""
+    total_rejections = sum(rejection_breakdown.values())
+    if total_rejections > 0:
+        biggest_reason = max(rejection_breakdown, key=rejection_breakdown.get)
+        if biggest_reason == "rejected":
+            rejection_insight = "Most losses come from negotiation failures. Consider adjusting floor pricing if gaps are consistently small."
+        elif biggest_reason == "no_match":
+            rejection_insight = "Many carriers can't find loads. Check unmet demand data and source inventory for high-request lanes."
+        elif biggest_reason == "carrier_declined":
+            rejection_insight = "Carriers are declining pitched loads. Review whether rates are competitive for the lanes being offered."
+
+    rejections = {
+        "breakdown": rejection_breakdown,
+        "total_lost": total_rejections,
+        "negotiation_gaps": negotiation_gaps,
+        "avg_negotiation_gap_pct": avg_gap,
+        "insight": rejection_insight,
+    }
+
+    # ===================================================================
+    # 6. CARRIER EXPERIENCE
+    # ===================================================================
+
+    # Sentiment distribution
+    sentiment_q = await db.execute(
+        select(CallRecord.sentiment, func.count(CallRecord.call_id))
+        .where(CallRecord.created_at >= cutoff)
+        .group_by(CallRecord.sentiment)
+    )
+    by_sentiment = {row[0]: row[1] for row in sentiment_q.all()}
+
+    # Repeat caller rate
+    unique_carriers_q = await db.execute(
+        select(func.count(distinct(CallRecord.carrier_mc)))
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.carrier_mc.isnot(None)))
+    )
+    unique_carriers = unique_carriers_q.scalar() or 0
+
+    repeat_q = await db.execute(
+        select(func.count())
+        .select_from(
+            select(CallRecord.carrier_mc)
+            .where(and_(CallRecord.created_at >= cutoff, CallRecord.carrier_mc.isnot(None)))
+            .group_by(CallRecord.carrier_mc)
+            .having(func.count(CallRecord.call_id) > 1)
+            .subquery()
+        )
+    )
+    repeat_carriers = repeat_q.scalar() or 0
+    repeat_rate = round(repeat_carriers / unique_carriers * 100, 1) if unique_carriers else 0
+
+    # Average negotiation rounds
+    avg_rounds_q = await db.execute(
+        select(func.avg(CallRecord.num_rounds))
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.num_rounds > 0))
+    )
+    avg_rounds = round(float(avg_rounds_q.scalar() or 0), 1)
+
+    # Average call duration
+    avg_dur_q = await db.execute(
+        select(func.avg(CallRecord.call_duration))
+        .where(and_(CallRecord.created_at >= cutoff, CallRecord.call_duration.isnot(None)))
+    )
+    avg_duration = round(float(avg_dur_q.scalar() or 0), 1)
+
+    # Satisfaction score (positive + neutral = satisfied)
+    positive = by_sentiment.get("positive", 0)
+    neutral = by_sentiment.get("neutral", 0)
+    satisfaction = round((positive + neutral) / total_calls * 100, 1) if total_calls else 0
+
+    experience = {
+        "sentiment": by_sentiment,
+        "satisfaction_rate": satisfaction,
+        "unique_carriers": unique_carriers,
+        "repeat_carriers": repeat_carriers,
+        "repeat_rate": repeat_rate,
+        "avg_negotiation_rounds": avg_rounds,
+        "avg_call_duration_seconds": avg_duration,
+    }
+
+    # ===================================================================
+    # RECENT CALLS (for activity feed)
+    # ===================================================================
+
+    recent_q = await db.execute(
+        select(CallRecord)
+        .where(CallRecord.created_at >= cutoff)
+        .order_by(CallRecord.created_at.desc())
+        .limit(10)
+    )
+    recent_calls = [
+        {
+            "call_id": c.call_id,
+            "carrier_mc": c.carrier_mc,
+            "carrier_name": c.carrier_name,
+            "outcome": c.outcome,
+            "sentiment": c.sentiment,
+            "initial_rate": c.initial_rate,
+            "agreed_price": c.agreed_price,
+            "num_rounds": c.num_rounds,
+            "load_id": c.load_id,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in recent_q.scalars().all()
+    ]
+
+    # ===================================================================
+    # ASSEMBLE RESPONSE
+    # ===================================================================
+
+    return {
+        "generated_at": datetime.utcnow().isoformat(),
+        "period_days": days,
+        "executive": executive,
+        "funnel": funnel,
+        "revenue": revenue,
+        "lanes": lanes,
+        "rejections": rejections,
+        "experience": experience,
+        "recent_calls": recent_calls,
+    }

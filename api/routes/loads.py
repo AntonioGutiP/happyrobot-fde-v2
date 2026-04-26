@@ -135,3 +135,19 @@ async def get_load(load_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Load {load_id} not found")
 
     return load
+
+
+@router.post("/reset-all")
+async def reset_all_loads(db: AsyncSession = Depends(get_db)):
+    """
+    Reset all loads back to 'available' status.
+    Used for testing and demos — not for production.
+    """
+    from sqlalchemy import update
+    await db.execute(update(Load).values(status="available"))
+    await db.commit()
+
+    count_q = await db.execute(select(func.count(Load.load_id)))
+    count = count_q.scalar()
+
+    return {"message": f"All {count} loads reset to available"}

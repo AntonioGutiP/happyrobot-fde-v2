@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carrier Sales Dashboard — Acme Logistics</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['DM Sans', 'sans-serif'] },
+      colors: {
+        dark: { 50:'#f8fafc',100:'#e2e8f0',200:'#cbd5e1',300:'#94a3b8',400:'#64748b',500:'#475569',600:'#334155',700:'#1e293b',800:'#0f172a',900:'#020617' },
+        accent: { DEFAULT:'#6366f1',light:'#818cf8',dark:'#4f46e5' },
+        success: '#22c55e', warning: '#f59e0b', danger: '#ef4444',
+      }
+    }
+  }
+}
+</script>
+<style>
+body { background: #0a0e1a; color: #e2e8f0; }
+.card { background: linear-gradient(145deg, #111827, #0f172a); border: 1px solid #1e293b; border-radius: 12px; }
+.kpi-card { background: linear-gradient(145deg, #111827, #131b2e); border: 1px solid #1e293b; border-radius: 12px; position: relative; overflow: hidden; }
+.kpi-card::after { content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-radius: 0 0 0 80px; opacity: 0.07; }
+.kpi-card:nth-child(1)::after { background: #6366f1; }
+.kpi-card:nth-child(2)::after { background: #22c55e; }
+.kpi-card:nth-child(3)::after { background: #f59e0b; }
+.kpi-card:nth-child(4)::after { background: #6366f1; }
+.kpi-card:nth-child(5)::after { background: #22c55e; }
+.funnel-bar { background: linear-gradient(90deg, #6366f1, #818cf8); border-radius: 6px; height: 32px; transition: width 1s ease; }
+.insight-box { background: #1a1f35; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; }
+.action-tag { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+.status-booked { color: #22c55e; }
+.status-rejected { color: #ef4444; }
+.status-carrier_declined { color: #f59e0b; }
+.status-no_match { color: #94a3b8; }
+.status-needs_follow_up { color: #6366f1; }
+.loading { display: flex; align-items: center; justify-content: center; min-height: 200px; }
+.loading::after { content: ''; width: 32px; height: 32px; border: 3px solid #1e293b; border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+table th { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: #64748b; font-weight: 600; }
+table td { font-size: 0.85rem; }
+.sentiment-positive { background: #22c55e; }
+.sentiment-neutral { background: #6366f1; }
+.sentiment-negative { background: #f59e0b; }
+.sentiment-hostile { background: #ef4444; }
+</style>
+</head>
+<body class="font-sans min-h-screen">
+
+<!-- Header -->
+<header class="border-b border-dark-700 px-6 py-4">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">Carrier Sales Intelligence</h1>
+      <p class="text-dark-400 text-sm mt-0.5">Acme Logistics — AI-Powered Inbound Operations</p>
+    </div>
+    <div class="flex items-center gap-4">
+      <select id="periodSelect" class="bg-dark-800 border border-dark-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accent" onchange="loadData()">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+        <span class="text-xs text-dark-400">Live</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+
+  <!-- KPI Cards -->
+  <section id="kpis" class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="kpi-card p-4">
+      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider">Total Calls</p>
+      <p class="text-2xl font-bold mt-1" id="kpi-calls">—</p>
+      <p class="text-xs text-dark-400 mt-1" id="kpi-calls-sub"></p>
+    </div>
+    <div class="kpi-card p-4">
+      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider">Conversion Rate</p>
+      <p class="text-2xl font-bold mt-1 text-success" id="kpi-conversion">—</p>
+      <p class="text-xs text-dark-400 mt-1" id="kpi-conversion-sub"></p>
+    </div>
+    <div class="kpi-card p-4">
+      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider">Booked Revenue</p>
+      <p class="text-2xl font-bold mt-1" id="kpi-revenue">—</p>
+      <p class="text-xs text-dark-400 mt-1" id="kpi-revenue-sub"></p>
+    </div>
+    <div class="kpi-card p-4">
+      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider">Avg Margin</p>
+      <p class="text-2xl font-bold mt-1 text-accent-light" id="kpi-margin">—</p>
+      <p class="text-xs text-dark-400 mt-1">loadboard vs agreed</p>
+    </div>
+    <div class="kpi-card p-4">
+      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider">Cost Savings</p>
+      <p class="text-2xl font-bold mt-1 text-success" id="kpi-savings">—</p>
+      <p class="text-xs text-dark-400 mt-1" id="kpi-savings-sub"></p>
+    </div>
+  </section>
+
+  <!-- Row 2: Funnel + Outcome -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Conversion Funnel -->
+    <div class="card p-5 lg:col-span-2">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Conversion Funnel</h2>
+      <div id="funnel" class="space-y-3"></div>
+      <div id="funnel-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
+    </div>
+
+    <!-- Outcome Distribution -->
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Call Outcomes</h2>
+      <canvas id="outcomeChart" height="220"></canvas>
+    </div>
+  </section>
+
+  <!-- Row 3: Revenue + Sentiment -->
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Revenue Breakdown -->
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Revenue & Deal Analysis</h2>
+      <div id="deals-table" class="overflow-x-auto"></div>
+      <div id="revenue-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
+    </div>
+
+    <!-- Carrier Sentiment -->
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Carrier Experience</h2>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <p class="text-dark-400 text-xs uppercase">Satisfaction Rate</p>
+          <p class="text-xl font-bold" id="satisfaction-rate">—</p>
+        </div>
+        <div>
+          <p class="text-dark-400 text-xs uppercase">Repeat Callers</p>
+          <p class="text-xl font-bold" id="repeat-rate">—</p>
+        </div>
+        <div>
+          <p class="text-dark-400 text-xs uppercase">Avg Negotiation Rounds</p>
+          <p class="text-xl font-bold" id="avg-rounds">—</p>
+        </div>
+        <div>
+          <p class="text-dark-400 text-xs uppercase">Unique Carriers</p>
+          <p class="text-xl font-bold" id="unique-carriers">—</p>
+        </div>
+      </div>
+      <canvas id="sentimentChart" height="160"></canvas>
+    </div>
+  </section>
+
+  <!-- Row 4: Lane Intelligence -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="card p-5 lg:col-span-2">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Lane Intelligence</h2>
+      <div id="lanes-table" class="overflow-x-auto"></div>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Unmet Demand</h2>
+      <p class="text-xs text-dark-400 mb-3">Carriers requesting lanes we don't have</p>
+      <div id="unmet-demand" class="space-y-2"></div>
+      <div id="unmet-empty" class="text-dark-500 text-sm text-center py-6 hidden">No unmet demand recorded yet</div>
+    </div>
+  </section>
+
+  <!-- Row 5: Rejection Analysis -->
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Rejection Analysis</h2>
+      <canvas id="rejectionChart" height="200"></canvas>
+      <div id="rejection-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Negotiation Gap Analysis</h2>
+      <p class="text-xs text-dark-400 mb-3">How far apart are failed deals? Small gaps = adjust floor pricing</p>
+      <div id="gap-table" class="overflow-x-auto"></div>
+      <div id="gap-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
+    </div>
+  </section>
+
+  <!-- Row 6: Recent Activity -->
+  <section class="card p-5">
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Recent Activity</h2>
+    <div id="recent-calls" class="overflow-x-auto"></div>
+  </section>
+
+  <!-- ROI Summary -->
+  <section class="card p-5 border-accent/30">
+    <h2 class="text-sm font-semibold uppercase tracking-wider text-accent-light mb-4">Business Impact Summary</h2>
+    <div id="roi-summary" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+  </section>
+
+</main>
+
+<footer class="border-t border-dark-700 px-6 py-4 mt-8">
+  <div class="max-w-7xl mx-auto flex items-center justify-between text-xs text-dark-500">
+    <span>Powered by HappyRobot AI Platform</span>
+    <span id="last-updated"></span>
+  </div>
+</footer>
+
+<script>
+const API_BASE = window.location.origin;
+let charts = {};
+
+function $(id) { return document.getElementById(id); }
+function fmt(n) { return n != null ? n.toLocaleString('en-US') : '—'; }
+function money(n) { return n != null ? '$' + n.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'; }
+function pct(n) { return n != null ? n + '%' : '—'; }
+
+async function loadData() {
+  const days = $('periodSelect').value;
+  try {
+    const resp = await fetch(`${API_BASE}/api/v1/dashboard/data?days=${days}`);
+    const data = await resp.json();
+    render(data);
+  } catch (e) {
+    console.error('Failed to load dashboard data:', e);
+  }
+}
+
+function render(d) {
+  // KPIs
+  $('kpi-calls').textContent = fmt(d.executive.total_calls);
+  $('kpi-calls-sub').textContent = `${d.funnel.booked} booked`;
+  $('kpi-conversion').textContent = pct(d.executive.conversion_rate);
+  $('kpi-conversion-sub').textContent = `${d.funnel.booked} of ${d.executive.total_calls} calls`;
+  $('kpi-revenue').textContent = money(d.executive.total_revenue);
+  $('kpi-revenue-sub').textContent = `${d.revenue.deals.length} deals closed`;
+  $('kpi-margin').textContent = pct(d.executive.avg_margin_pct);
+  $('kpi-savings').textContent = money(d.executive.cost_savings);
+  $('kpi-savings-sub').textContent = `${pct(d.executive.roi_pct)} ROI vs human`;
+
+  renderFunnel(d.funnel);
+  renderOutcomeChart(d.funnel);
+  renderDeals(d.revenue);
+  renderExperience(d.experience);
+  renderSentimentChart(d.experience.sentiment);
+  renderLanes(d.lanes);
+  renderUnmetDemand(d.lanes.unmet_demand);
+  renderRejections(d.rejections);
+  renderGaps(d.rejections);
+  renderRecent(d.recent_calls);
+  renderROI(d.executive, d.revenue);
+
+  $('last-updated').textContent = `Updated: ${new Date(d.generated_at).toLocaleString()}`;
+}
+
+function renderFunnel(f) {
+  const stages = [
+    { label: 'Incoming Calls', value: f.total_calls, color: '#6366f1' },
+    { label: 'FMCSA Verified', value: f.fmcsa_verified, color: '#818cf8' },
+    { label: 'Load Pitched', value: f.loads_pitched, color: '#a78bfa' },
+    { label: 'Negotiated', value: f.entered_negotiation, color: '#c4b5fd' },
+    { label: 'Booked', value: f.booked, color: '#22c55e' },
+  ];
+  const max = Math.max(f.total_calls, 1);
+
+  let html = '';
+  stages.forEach((s, i) => {
+    const w = Math.max((s.value / max) * 100, 4);
+    const dropoff = i > 0 ? stages[i-1].value - s.value : 0;
+    const dropPct = i > 0 && stages[i-1].value > 0 ? Math.round(dropoff / stages[i-1].value * 100) : 0;
+    html += `
+      <div class="flex items-center gap-3">
+        <div class="w-28 text-xs text-dark-300 text-right">${s.label}</div>
+        <div class="flex-1">
+          <div class="funnel-bar flex items-center px-3 text-xs font-semibold text-white" style="width:${w}%;background:${s.color}">
+            ${s.value}
+          </div>
+        </div>
+        ${i > 0 && dropoff > 0 ? `<span class="text-xs text-danger">-${dropoff} (${dropPct}%)</span>` : '<span class="w-16"></span>'}
+      </div>`;
+  });
+  $('funnel').innerHTML = html;
+
+  // Insight
+  const worstDrop = Object.entries(f.drop_offs).sort((a,b) => b[1] - a[1])[0];
+  if (worstDrop && worstDrop[1] > 0) {
+    const labels = { verification_fail: 'FMCSA verification', no_load_match: 'load matching', declined_after_pitch: 'post-pitch', negotiation_failed: 'negotiation' };
+    $('funnel-insight').classList.remove('hidden');
+    $('funnel-insight').innerHTML = `<span class="text-accent-light font-semibold">Insight:</span> Biggest drop-off is at <strong>${labels[worstDrop[0]] || worstDrop[0]}</strong> (${worstDrop[1]} calls lost). Focus optimization efforts here.`;
+  }
+}
+
+function renderOutcomeChart(f) {
+  if (charts.outcome) charts.outcome.destroy();
+  charts.outcome = new Chart($('outcomeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Booked', 'Rejected', 'Carrier Declined', 'No Match', 'Follow-up'],
+      datasets: [{
+        data: [f.booked, f.drop_offs.negotiation_failed, f.drop_offs.declined_after_pitch, f.drop_offs.no_load_match, 0],
+        backgroundColor: ['#22c55e', '#ef4444', '#f59e0b', '#64748b', '#6366f1'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 } }
+      },
+      cutout: '65%',
+    }
+  });
+}
+
+function renderDeals(rev) {
+  if (!rev.deals.length) {
+    $('deals-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No deals closed yet</p>';
+    return;
+  }
+  let html = `<table class="w-full text-left">
+    <thead><tr class="border-b border-dark-700">
+      <th class="py-2 px-2">Load</th><th class="py-2 px-2">List Rate</th><th class="py-2 px-2">Agreed</th>
+      <th class="py-2 px-2">Margin</th><th class="py-2 px-2">Rounds</th>
+    </tr></thead><tbody>`;
+  rev.deals.forEach(d => {
+    html += `<tr class="border-b border-dark-800">
+      <td class="py-2 px-2 font-mono text-xs">${d.load_id || '—'}</td>
+      <td class="py-2 px-2">${money(d.initial_rate)}</td>
+      <td class="py-2 px-2 text-success">${money(d.agreed_price)}</td>
+      <td class="py-2 px-2">${money(d.margin_dollars)} <span class="text-dark-400 text-xs">(${d.margin_pct}%)</span></td>
+      <td class="py-2 px-2 text-center">${d.rounds}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+
+  const avgMargin = rev.avg_margin_pct;
+  $('deals-table').innerHTML = html;
+
+  if (avgMargin > 0) {
+    $('revenue-insight').classList.remove('hidden');
+    $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">Insight:</span> Average margin is <strong>${avgMargin}%</strong>. ` +
+      (avgMargin < 3 ? 'Margins are thin — consider tightening floor pricing.' :
+       avgMargin > 10 ? 'Strong margins. AI negotiation is holding rate integrity well.' :
+       'Healthy margin range. AI consistently holds rates above floor.');
+  }
+}
+
+function renderExperience(exp) {
+  $('satisfaction-rate').textContent = pct(exp.satisfaction_rate);
+  $('repeat-rate').textContent = `${exp.repeat_carriers} (${pct(exp.repeat_rate)})`;
+  $('avg-rounds').textContent = exp.avg_negotiation_rounds;
+  $('unique-carriers').textContent = fmt(exp.unique_carriers);
+}
+
+function renderSentimentChart(sentiment) {
+  if (charts.sentiment) charts.sentiment.destroy();
+  const labels = Object.keys(sentiment).map(s => s.charAt(0).toUpperCase() + s.slice(1));
+  const values = Object.values(sentiment);
+  const colors = { positive: '#22c55e', neutral: '#6366f1', negative: '#f59e0b', hostile: '#ef4444' };
+
+  charts.sentiment = new Chart($('sentimentChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: Object.keys(sentiment).map(s => colors[s] || '#64748b'),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
+        y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', stepSize: 1 } },
+      }
+    }
+  });
+}
+
+function renderLanes(lanes) {
+  if (!lanes.top_lanes.length) {
+    $('lanes-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No lane data yet</p>';
+    return;
+  }
+  let html = `<table class="w-full text-left">
+    <thead><tr class="border-b border-dark-700">
+      <th class="py-2 px-2">Lane</th><th class="py-2 px-2">Equip</th><th class="py-2 px-2">Calls</th>
+      <th class="py-2 px-2">Booked</th><th class="py-2 px-2">Conv%</th><th class="py-2 px-2">Action</th>
+    </tr></thead><tbody>`;
+  lanes.top_lanes.forEach(l => {
+    const convColor = l.conversion_pct >= 70 ? 'text-success' : l.conversion_pct >= 40 ? 'text-warning' : 'text-danger';
+    html += `<tr class="border-b border-dark-800">
+      <td class="py-2 px-2 text-sm">${l.origin} → ${l.destination}</td>
+      <td class="py-2 px-2 text-xs">${l.equipment_type}</td>
+      <td class="py-2 px-2 text-center">${l.total_calls}</td>
+      <td class="py-2 px-2 text-center">${l.booked}</td>
+      <td class="py-2 px-2 ${convColor} font-semibold">${l.conversion_pct}%</td>
+      <td class="py-2 px-2"><span class="action-tag text-xs px-2 py-0.5 rounded-full">${l.action.split('—')[0]}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('lanes-table').innerHTML = html;
+}
+
+function renderUnmetDemand(unmet) {
+  if (!unmet || !unmet.length) {
+    $('unmet-empty').classList.remove('hidden');
+    return;
+  }
+  $('unmet-empty').classList.add('hidden');
+  let html = '';
+  unmet.forEach(u => {
+    html += `<div class="bg-dark-800 rounded-lg p-3">
+      <p class="text-sm font-medium">${u.origin} → ${u.destination}</p>
+      <p class="text-xs text-dark-400">${u.equipment_type || 'Any'} · ${u.carrier_requests} carrier${u.carrier_requests > 1 ? 's' : ''} requesting</p>
+      <p class="text-xs text-accent-light mt-1">${u.action}</p>
+    </div>`;
+  });
+  $('unmet-demand').innerHTML = html;
+}
+
+function renderRejections(rej) {
+  if (charts.rejection) charts.rejection.destroy();
+  const labels = { rejected: 'Negotiation Failed', carrier_declined: 'Carrier Declined', no_match: 'No Matching Load' };
+  const colors = { rejected: '#ef4444', carrier_declined: '#f59e0b', no_match: '#64748b' };
+
+  const keys = Object.keys(rej.breakdown);
+  if (!keys.length) {
+    $('rejectionChart').parentElement.querySelector('h2').insertAdjacentHTML('afterend', '<p class="text-dark-500 text-sm text-center py-6">No rejections recorded</p>');
+    return;
+  }
+
+  charts.rejection = new Chart($('rejectionChart'), {
+    type: 'bar',
+    data: {
+      labels: keys.map(k => labels[k] || k),
+      datasets: [{
+        data: keys.map(k => rej.breakdown[k]),
+        backgroundColor: keys.map(k => colors[k] || '#64748b'),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', stepSize: 1 } },
+        y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12 } } },
+      }
+    }
+  });
+
+  if (rej.insight) {
+    $('rejection-insight').classList.remove('hidden');
+    $('rejection-insight').innerHTML = `<span class="text-accent-light font-semibold">Recommendation:</span> ${rej.insight}`;
+  }
+}
+
+function renderGaps(rej) {
+  if (!rej.negotiation_gaps.length) {
+    $('gap-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No failed negotiations to analyze</p>';
+    return;
+  }
+  let html = `<table class="w-full text-left">
+    <thead><tr class="border-b border-dark-700">
+      <th class="py-2 px-2">Load</th><th class="py-2 px-2">List Rate</th><th class="py-2 px-2">Floor</th>
+      <th class="py-2 px-2">Rounds</th><th class="py-2 px-2">Max Flex</th>
+    </tr></thead><tbody>`;
+  rej.negotiation_gaps.forEach(g => {
+    html += `<tr class="border-b border-dark-800">
+      <td class="py-2 px-2 font-mono text-xs">${g.load_id || '—'}</td>
+      <td class="py-2 px-2">${money(g.initial_rate)}</td>
+      <td class="py-2 px-2">${money(g.floor_price)}</td>
+      <td class="py-2 px-2 text-center">${g.rounds}</td>
+      <td class="py-2 px-2">${g.max_concession_pct}%</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('gap-table').innerHTML = html;
+
+  if (rej.avg_negotiation_gap_pct > 0 && rej.avg_negotiation_gap_pct < 15) {
+    $('gap-insight').classList.remove('hidden');
+    $('gap-insight').innerHTML = `<span class="text-accent-light font-semibold">Insight:</span> Average negotiation flexibility is <strong>${rej.avg_negotiation_gap_pct}%</strong>. ` +
+      (rej.avg_negotiation_gap_pct < 8 ? 'Floor is very tight. Consider widening by 2-3% to close more deals.' : 'Reasonable flexibility. Hold current floor levels.');
+  }
+}
+
+function renderRecent(calls) {
+  if (!calls.length) {
+    $('recent-calls').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No recent calls</p>';
+    return;
+  }
+  let html = `<table class="w-full text-left">
+    <thead><tr class="border-b border-dark-700">
+      <th class="py-2 px-2">Time</th><th class="py-2 px-2">Carrier</th><th class="py-2 px-2">MC#</th>
+      <th class="py-2 px-2">Load</th><th class="py-2 px-2">Outcome</th><th class="py-2 px-2">Rate</th>
+      <th class="py-2 px-2">Agreed</th><th class="py-2 px-2">Rounds</th><th class="py-2 px-2">Sentiment</th>
+    </tr></thead><tbody>`;
+  calls.forEach(c => {
+    const time = c.created_at ? new Date(c.created_at).toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+    const outcomeLabel = { booked:'Booked', rejected:'Rejected', carrier_declined:'Declined', no_match:'No Match', needs_follow_up:'Follow-up' };
+    html += `<tr class="border-b border-dark-800 hover:bg-dark-800/50">
+      <td class="py-2 px-2 text-xs text-dark-400">${time}</td>
+      <td class="py-2 px-2 text-sm">${c.carrier_name || '—'}</td>
+      <td class="py-2 px-2 font-mono text-xs">${c.carrier_mc || '—'}</td>
+      <td class="py-2 px-2 font-mono text-xs">${c.load_id || '—'}</td>
+      <td class="py-2 px-2 status-${c.outcome} font-semibold text-sm">${outcomeLabel[c.outcome] || c.outcome}</td>
+      <td class="py-2 px-2">${money(c.initial_rate)}</td>
+      <td class="py-2 px-2 ${c.agreed_price ? 'text-success' : 'text-dark-500'}">${money(c.agreed_price)}</td>
+      <td class="py-2 px-2 text-center">${c.num_rounds}</td>
+      <td class="py-2 px-2"><span class="inline-block w-2 h-2 rounded-full sentiment-${c.sentiment}"></span> <span class="text-xs">${c.sentiment}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  $('recent-calls').innerHTML = html;
+}
+
+function renderROI(exec, rev) {
+  $('roi-summary').innerHTML = `
+    <div class="bg-dark-800 rounded-lg p-4">
+      <p class="text-dark-400 text-xs uppercase mb-1">Human Rep Cost (estimated)</p>
+      <p class="text-lg font-bold text-dark-300">${money(exec.human_cost_baseline)}</p>
+      <p class="text-xs text-dark-400">${fmt(exec.total_calls)} calls × $${AI_COST_PER_CALL = 18}/call</p>
+    </div>
+    <div class="bg-dark-800 rounded-lg p-4">
+      <p class="text-dark-400 text-xs uppercase mb-1">AI Agent Cost</p>
+      <p class="text-lg font-bold text-accent-light">${money(exec.ai_cost)}</p>
+      <p class="text-xs text-dark-400">${fmt(exec.total_calls)} calls × $1.50/call</p>
+    </div>
+    <div class="bg-success/10 border border-success/20 rounded-lg p-4">
+      <p class="text-success text-xs uppercase mb-1">Net Savings</p>
+      <p class="text-lg font-bold text-success">${money(exec.cost_savings)}</p>
+      <p class="text-xs text-success/70">${pct(exec.roi_pct)} return on investment</p>
+    </div>`;
+}
+
+// Load on start
+loadData();
+// Refresh every 30 seconds
+setInterval(loadData, 30000);
+</script>
+</body>
+</html>

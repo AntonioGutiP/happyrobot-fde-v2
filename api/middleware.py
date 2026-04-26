@@ -12,8 +12,11 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
         if request.url.path in PUBLIC_PATHS or request.method == "OPTIONS":
             return await call_next(request)
 
-        # Also skip for docs assets
-        if request.url.path.startswith("/docs") or request.url.path.startswith("/redoc"):
+        # Also skip for docs assets and dashboard
+        if (request.url.path.startswith("/docs")
+            or request.url.path.startswith("/redoc")
+            or request.url.path.startswith("/dashboard")
+            or request.url.path.startswith("/api/v1/dashboard")):
             return await call_next(request)
 
         api_key = request.headers.get("X-API-Key")
