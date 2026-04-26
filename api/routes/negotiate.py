@@ -61,6 +61,7 @@ class NegotiateRequest(BaseModel):
     current_round: int = 1
     pricing_strategy: str = "firm"
     opening_rate: Optional[float] = None
+    is_per_mile: bool = False  # If true, carrier_offer is $/mile — multiply by load miles
 
     @field_validator("carrier_offer", "opening_rate", mode="before")
     @classmethod
@@ -76,13 +77,23 @@ class NegotiateRequest(BaseModel):
             return 1
         return int(v)
 
+    @field_validator("is_per_mile", mode="before")
+    @classmethod
+    def coerce_bool(cls, v):
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes")
+        return bool(v) if v is not None else False
+
 
 class NegotiateResponse(BaseModel):
     action: str
     counter_offer: Optional[float] = None
+    counter_per_mile: Optional[float] = None  # counter as $/mile
     floor_price: float
     loadboard_rate: float
     carrier_offer: float
+    carrier_offer_per_mile: Optional[float] = None  # carrier's offer as $/mile
+    rate_per_mile: Optional[float] = None  # loadboard rate as $/mile
     current_round: int
     max_rounds: int = 3
     margin_at_carrier_offer: float
@@ -95,8 +106,8 @@ class NegotiateResponse(BaseModel):
 @router.post("", response_model=NegotiateResponse)
 async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
     """
-    Deterministic negotiation. Returns exact action + counter amount.
-    Automatically tracks all rounds server-side for counter_offers logging.
+    Deterministic negotiation with per-mile support.
+    Tracks all rounds server-side for counter_offers logging.
     """
     settings = get_settings()
 
@@ -114,6 +125,16 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
 
     loadboard_rate = load.loadboard_rate
     opening = req.opening_rate or loadboard_rate
+    miles = load.miles or 1
+
+    # Convert per-mile offer to flat rate if needed
+    offer = req.carrier_offer
+    if req.is_per_mile and miles > 0:
+        offer = round(req.carrier_offer * miles, 2)
+
+    # Per-mile reference values
+    rpm = round(loadboard_rate / miles, 2) if miles > 0 else None
+    offer_rpm = round(offer / miles, 2) if miles > 0 else None
 
     # Floor calculation
     base_floor_pct = settings.floor_rate_pct
@@ -126,12 +147,11 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
 
     floor_price = round(loadboard_rate * floor_pct, 2)
 
-    # Margin at carrier offer
     margin_at_carrier = round(
-        (loadboard_rate - req.carrier_offer) / loadboard_rate * 100, 1
+        (loadboard_rate - offer) / loadboard_rate * 100, 1
     ) if loadboard_rate > 0 else 0
 
-    # --- Initialize session if needed ---
+    # Initialize session
     if req.load_id not in _negotiation_sessions:
         _negotiation_sessions[req.load_id] = {
             "loadboard_rate": loadboard_rate,
@@ -140,112 +160,87 @@ async def negotiate(req: NegotiateRequest, db: AsyncSession = Depends(get_db)):
             "rounds": [],
             "started_at": datetime.utcnow().isoformat(),
         }
-
     session = _negotiation_sessions[req.load_id]
 
-    # --- DECISION LOGIC ---
-
-    # ABSURD OFFER
-    if req.carrier_offer < loadboard_rate * 0.50:
-        round_data = {
-            "round": req.current_round,
-            "carrier_offer": req.carrier_offer,
-            "our_response": "rejected_absurd",
-            "our_counter": None,
-        }
-        session["rounds"].append(round_data)
-
+    # Helper to build response with per-mile fields
+    def resp(**kwargs):
         return NegotiateResponse(
+            rate_per_mile=rpm,
+            carrier_offer_per_mile=offer_rpm,
+            negotiation_history=session["rounds"],
+            **kwargs,
+        )
+
+    # --- ABSURD OFFER ---
+    if offer < loadboard_rate * 0.50:
+        session["rounds"].append({"round": req.current_round, "carrier_offer": offer, "our_response": "rejected_absurd", "our_counter": None})
+        return resp(
             action="reject", floor_price=floor_price, loadboard_rate=loadboard_rate,
-            carrier_offer=req.carrier_offer, current_round=req.current_round,
+            carrier_offer=offer, current_round=req.current_round,
             margin_at_carrier_offer=margin_at_carrier,
-            reasoning=f"Offer ${req.carrier_offer:.0f} is below 50% of rate. Not serious.",
+            reasoning=f"Offer ${offer:.0f} is below 50% of rate. Not serious.",
             guidance=f"That's well below where I can go on this lane. I'm at ${opening:.0f}. Got a number closer to that?",
-            negotiation_history=session["rounds"],
         )
 
-    # ACCEPT — carrier at or above floor
-    if req.carrier_offer >= floor_price:
-        round_data = {
-            "round": req.current_round,
-            "carrier_offer": req.carrier_offer,
-            "our_response": "accepted",
-            "our_counter": None,
-        }
-        session["rounds"].append(round_data)
-
-        return NegotiateResponse(
+    # --- ACCEPT ---
+    if offer >= floor_price:
+        session["rounds"].append({"round": req.current_round, "carrier_offer": offer, "our_response": "accepted", "our_counter": None})
+        return resp(
             action="accept", floor_price=floor_price, loadboard_rate=loadboard_rate,
-            carrier_offer=req.carrier_offer, current_round=req.current_round,
+            carrier_offer=offer, current_round=req.current_round,
             margin_at_carrier_offer=margin_at_carrier,
-            reasoning=f"Offer ${req.carrier_offer:.0f} >= floor ${floor_price:.0f}. Accept.",
-            guidance=f"I can make that work. ${req.carrier_offer:.0f} it is — let me get you connected.",
-            negotiation_history=session["rounds"],
+            reasoning=f"Offer ${offer:.0f} >= floor ${floor_price:.0f}. Accept.",
+            guidance=f"I can make that work. ${offer:.0f} it is — let me get you connected.",
         )
 
-    # WALK AWAY — exceeded max rounds
+    # --- WALK AWAY ---
     if req.current_round > 3:
-        round_data = {
-            "round": req.current_round,
-            "carrier_offer": req.carrier_offer,
-            "our_response": "walk_away",
-            "our_counter": None,
-        }
-        session["rounds"].append(round_data)
-
-        return NegotiateResponse(
+        session["rounds"].append({"round": req.current_round, "carrier_offer": offer, "our_response": "walk_away", "our_counter": None})
+        return resp(
             action="walk_away", floor_price=floor_price, loadboard_rate=loadboard_rate,
-            carrier_offer=req.carrier_offer, current_round=req.current_round,
+            carrier_offer=offer, current_round=req.current_round,
             margin_at_carrier_offer=margin_at_carrier,
             reasoning=f"Round {req.current_round} exceeds max. Walking away.",
             guidance="I've gone as far as I can on this one. Appreciate the call — hope we line up next time.",
-            negotiation_history=session["rounds"],
         )
 
     # --- COUNTER-OFFER ---
     range_total = opening - floor_price
 
     if req.current_round == 1:
-        concession = range_total * 0.30
-        counter = round(opening - concession, -1)
-        guidance = f"I appreciate the counter. Best I can do right now is ${counter:.0f}. Tight on margin with this one."
+        counter = round(opening - (range_total * 0.30), -1)
+        counter_rpm = round(counter / miles, 2) if miles > 0 else None
+        guidance = f"I appreciate the counter. Best I can do right now is ${counter:.0f} — that's about ${counter_rpm} a mile. Tight on margin with this one."
     elif req.current_round == 2:
-        concession = range_total * 0.60
-        counter = round(opening - concession, -1)
-        guidance = f"I want to make this work for you. I can stretch to ${counter:.0f} — that's about as far as I can go."
+        counter = round(opening - (range_total * 0.60), -1)
+        counter_rpm = round(counter / miles, 2) if miles > 0 else None
+        guidance = f"I want to make this work for you. I can stretch to ${counter:.0f} — ${counter_rpm} a mile. That's about as far as I can go."
     else:
         counter = round(floor_price + (range_total * 0.05), -1)
         if counter < floor_price:
             counter = round(floor_price, -1)
-        guidance = f"Alright, my absolute best is ${counter:.0f}. That's the ceiling on my end."
+        counter_rpm = round(counter / miles, 2) if miles > 0 else None
+        guidance = f"Alright, my absolute best is ${counter:.0f} — ${counter_rpm} a mile. That's the ceiling on my end."
 
-    # Safety bounds
     if counter < floor_price:
         counter = floor_price
     if counter > opening:
         counter = opening
 
+    counter_rpm = round(counter / miles, 2) if miles > 0 else None
     margin_at_counter = round(
         (loadboard_rate - counter) / loadboard_rate * 100, 1
     ) if loadboard_rate > 0 else 0
 
-    # Record this round
-    round_data = {
-        "round": req.current_round,
-        "carrier_offer": req.carrier_offer,
-        "our_response": "counter",
-        "our_counter": counter,
-    }
-    session["rounds"].append(round_data)
+    session["rounds"].append({"round": req.current_round, "carrier_offer": offer, "our_response": "counter", "our_counter": counter})
 
-    return NegotiateResponse(
-        action="counter", counter_offer=counter,
+    return resp(
+        action="counter", counter_offer=counter, counter_per_mile=counter_rpm,
         floor_price=floor_price, loadboard_rate=loadboard_rate,
-        carrier_offer=req.carrier_offer, current_round=req.current_round,
+        carrier_offer=offer, current_round=req.current_round,
         margin_at_carrier_offer=margin_at_carrier, margin_at_counter=margin_at_counter,
-        reasoning=f"Round {req.current_round}: Carrier ${req.carrier_offer:.0f}, counter ${counter:.0f}. Floor ${floor_price:.0f}.",
+        reasoning=f"Round {req.current_round}: Carrier ${offer:.0f}, counter ${counter:.0f}. Floor ${floor_price:.0f}.",
         guidance=guidance,
-        negotiation_history=session["rounds"],
     )
 
 

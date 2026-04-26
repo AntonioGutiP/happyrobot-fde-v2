@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime
 from typing import Optional
 from models import CallOutcome, CallSentiment
@@ -23,9 +23,31 @@ class LoadOut(BaseModel):
     miles: float
     dimensions: Optional[str] = None
     status: str
+    rate_per_mile: Optional[float] = None
+    pickup_urgency: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+    @model_validator(mode="after")
+    def compute_fields(self):
+        # Rate per mile
+        if self.miles and self.miles > 0 and self.loadboard_rate:
+            self.rate_per_mile = round(self.loadboard_rate / self.miles, 2)
+        # Pickup urgency
+        if self.pickup_datetime:
+            from datetime import timezone
+            now = datetime.now(timezone.utc) if self.pickup_datetime.tzinfo else datetime.utcnow()
+            hours_until = (self.pickup_datetime - now).total_seconds() / 3600
+            if hours_until < 0:
+                self.pickup_urgency = "past_due"
+            elif hours_until < 24:
+                self.pickup_urgency = "urgent"
+            elif hours_until < 48:
+                self.pickup_urgency = "soon"
+            else:
+                self.pickup_urgency = "standard"
+        return self
 
 
 class LoadSearchParams(BaseModel):

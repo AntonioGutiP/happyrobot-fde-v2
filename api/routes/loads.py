@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case, and_
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from database import get_db
 from models import Load, CallRecord
 from schemas import LoadOut
@@ -167,14 +167,36 @@ async def get_load(load_id: str, db: AsyncSession = Depends(get_db)):
 @router.post("/reset-all")
 async def reset_all_loads(db: AsyncSession = Depends(get_db)):
     """
-    Reset all loads back to 'available' status.
-    Used for testing and demos — not for production.
+    Reset all loads: status back to 'available' AND refresh pickup/delivery
+    dates to be relative to today. Call before every demo.
     """
     from sqlalchemy import update
+
+    # Reset status
     await db.execute(update(Load).values(status="available"))
+
+    # Refresh dates — shift all dates so they're relative to today
+    result = await db.execute(select(Load))
+    loads = result.scalars().all()
+
+    now = datetime.utcnow().replace(hour=8, minute=0, second=0, microsecond=0)
+
+    for i, load in enumerate(loads):
+        # Spread loads across the next 5 days
+        day_offset = i % 5
+        pickup_hour = 4 + (i * 2) % 16  # vary pickup times
+
+        old_duration = (load.delivery_datetime - load.pickup_datetime) if load.delivery_datetime and load.pickup_datetime else timedelta(hours=24)
+
+        load.pickup_datetime = now + timedelta(days=day_offset, hours=pickup_hour)
+        load.delivery_datetime = load.pickup_datetime + old_duration
+
     await db.commit()
 
     count_q = await db.execute(select(func.count(Load.load_id)))
     count = count_q.scalar()
 
-    return {"message": f"All {count} loads reset to available"}
+    return {
+        "message": f"All {count} loads reset: status=available, dates refreshed to today+5 days",
+        "base_date": now.strftime("%Y-%m-%d"),
+    }
