@@ -9,98 +9,94 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0b1121;color:#e2e8f0;font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
+body{background:#f0f2f7;color:#1e293b;font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
 .mono{font-family:'JetBrains Mono',monospace}
 
-/* Cards */
-.card{background:rgba(15,23,42,.65);border:1px solid rgba(51,65,85,.4);border-radius:16px;backdrop-filter:blur(8px);transition:border-color .25s}
-.card:hover{border-color:rgba(96,165,250,.25)}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .25s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07)}
 
-/* KPI */
-.kpi{background:rgba(15,23,42,.65);border:1px solid rgba(51,65,85,.35);border-radius:14px;transition:all .3s;cursor:default;position:relative}
-.kpi:hover{border-color:rgba(96,165,250,.35);transform:translateY(-1px);box-shadow:0 6px 24px rgba(59,130,246,.06)}
+.kpi{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;position:relative;overflow:hidden;transition:all .3s;cursor:default}
+.kpi:hover{box-shadow:0 6px 24px rgba(0,0,0,.08);transform:translateY(-2px)}
+.kpi-accent{position:absolute;top:0;left:0;right:0;height:4px;border-radius:16px 16px 0 0}
 
-/* Tooltip */
+.insight{background:#f8fafc;border-left:4px solid #3b82f6;border-radius:0 12px 12px 0;padding:14px 20px;margin-top:16px}
+.insight p{font-size:.82rem;color:#64748b;line-height:1.7}
+.insight strong{color:#1e293b}
+
+.tag{padding:3px 10px;border-radius:6px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
+.tg{background:#dcfce7;color:#16a34a}.ta{background:#fef3c7;color:#d97706}.tr{background:#fee2e2;color:#dc2626}.tb{background:#dbeafe;color:#2563eb}.tp{background:#ede9fe;color:#7c3aed}
+
 .tip{position:relative}
-.tip .tt{visibility:hidden;opacity:0;background:#1e293b;color:#cbd5e1;border:1px solid #334155;border-radius:10px;padding:10px 14px;font-size:.75rem;line-height:1.55;width:260px;position:absolute;z-index:99;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);transition:opacity .2s;box-shadow:0 12px 32px rgba(0,0,0,.5);pointer-events:none}
+.tip .tt{visibility:hidden;opacity:0;background:#1e293b;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:.75rem;line-height:1.55;width:260px;position:absolute;z-index:99;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);transition:opacity .2s;box-shadow:0 12px 32px rgba(0,0,0,.25);pointer-events:none}
 .tip .tt::after{content:'';position:absolute;top:100%;left:50%;margin-left:-5px;border:5px solid transparent;border-top-color:#1e293b}
 .tip:hover .tt{visibility:visible;opacity:1}
 
-/* Tags */
-.tag{padding:3px 10px;border-radius:6px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
-.tg{background:rgba(34,197,94,.1);color:#22c55e}.ta{background:rgba(245,158,11,.1);color:#f59e0b}.tr{background:rgba(239,68,68,.1);color:#ef4444}.tb{background:rgba(59,130,246,.1);color:#60a5fa}.tp{background:rgba(139,92,246,.1);color:#8b5cf6}
+.rec{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;transition:all .2s}
+.rec:hover{border-color:#93c5fd;background:#eff6ff}
 
-/* Insight */
-.insight{background:rgba(30,41,59,.5);border-left:3px solid #3b82f6;border-radius:0 10px 10px 0;padding:12px 18px}
-.insight p{font-size:.8rem;color:#94a3b8;line-height:1.6}
-.insight strong{color:#e2e8f0}
+table{border-collapse:separate;border-spacing:0;width:100%}
+th{text-transform:uppercase;font-size:.63rem;letter-spacing:.07em;color:#94a3b8;font-weight:700;padding:10px 14px;text-align:left;border-bottom:2px solid #f1f5f9}
+td{font-size:.8rem;padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#334155}
+tr:hover td{background:#f8fafc}
 
 /* Funnel */
-.fb{height:36px;border-radius:8px;display:flex;align-items:center;padding:0 14px;font-weight:700;font-size:.8rem;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.funnel-step{position:relative;display:flex;align-items:center;gap:16px}
+.funnel-shape{height:48px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-weight:700;font-size:.85rem;color:#fff;transition:all .4s;min-width:60px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.funnel-shape:hover{transform:scaleX(1.02);box-shadow:0 4px 16px rgba(0,0,0,.15)}
+.funnel-arrow{color:#cbd5e1;font-size:1.2rem;text-align:center;line-height:20px}
 
-/* Recommendations */
-.rec{background:rgba(30,41,59,.4);border:1px solid rgba(51,65,85,.35);border-radius:12px;padding:14px 18px;transition:all .2s}
-.rec:hover{border-color:rgba(96,165,250,.3);background:rgba(59,130,246,.03)}
-
-/* Table */
-table{border-collapse:separate;border-spacing:0;width:100%}
-th{text-transform:uppercase;font-size:.63rem;letter-spacing:.07em;color:#475569;font-weight:700;padding:10px 14px;text-align:left;border-bottom:1px solid rgba(51,65,85,.4)}
-td{font-size:.78rem;padding:10px 14px;border-bottom:1px solid rgba(51,65,85,.2)}
-tr:hover td{background:rgba(59,130,246,.015)}
-
-/* Donut center */
 .dc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
 
-/* Divider */
-.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(51,65,85,.4) 20%,rgba(51,65,85,.4) 80%,transparent);margin:8px 0}
-
-/* Animate in */
-@keyframes up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-#ct>div{animation:up .35s ease both}
-#ct>div:nth-child(2){animation-delay:.04s}#ct>div:nth-child(3){animation-delay:.08s}#ct>div:nth-child(4){animation-delay:.12s}
-#ct>div:nth-child(5){animation-delay:.16s}#ct>div:nth-child(6){animation-delay:.2s}#ct>div:nth-child(7){animation-delay:.24s}
-#ct>div:nth-child(8){animation-delay:.28s}#ct>div:nth-child(9){animation-delay:.32s}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#ct>div{animation:up .4s ease both}
+#ct>div:nth-child(2){animation-delay:.06s}#ct>div:nth-child(3){animation-delay:.12s}#ct>div:nth-child(4){animation-delay:.18s}
+#ct>div:nth-child(5){animation-delay:.24s}#ct>div:nth-child(6){animation-delay:.3s}#ct>div:nth-child(7){animation-delay:.36s}
+#ct>div:nth-child(8){animation-delay:.42s}#ct>div:nth-child(9){animation-delay:.48s}
 </style>
 </head>
 <body class="min-h-screen">
 
 <!-- Header -->
-<header class="border-b border-white/[.06] px-6 py-5">
-<div class="max-w-[1280px] mx-auto flex items-center justify-between">
+<header class="bg-white border-b border-slate-200 px-6 py-5 sticky top-0 z-50">
+<div class="max-w-[1320px] mx-auto flex items-center justify-between">
   <div class="flex items-center gap-3">
-    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-extrabold shadow-lg shadow-blue-500/20">A</div>
-    <div><h1 class="text-[17px] font-extrabold tracking-tight">Carrier Sales Intelligence</h1><p class="text-[11px] text-slate-500 mt-0.5">Acme Logistics · AI-Powered Operations</p></div>
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-extrabold shadow-lg shadow-blue-500/25">A</div>
+    <div><h1 class="text-lg font-extrabold tracking-tight text-slate-800">Carrier Sales Intelligence</h1><p class="text-[11px] text-slate-400 mt-0.5 font-medium">Acme Logistics · AI-Powered Operations</p></div>
   </div>
   <div class="flex items-center gap-5">
-    <select id="ps" class="bg-transparent border border-white/[.08] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500/50 text-slate-400" onchange="L()"><option value="7">7d</option><option value="30" selected>30d</option><option value="90">90d</option></select>
-    <button onclick="L()" class="text-xs text-slate-500 hover:text-blue-400 transition">↻</button>
-    <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-[9px] text-slate-500 uppercase tracking-widest">Live</span></div>
+    <select id="ps" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20" onchange="L()"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select>
+    <button onclick="L()" class="text-xs text-slate-400 hover:text-blue-500 transition font-medium">↻ Refresh</button>
+    <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Live</span></div>
   </div>
 </div>
 </header>
 
-<main class="max-w-[1280px] mx-auto px-6 py-8">
-<div id="ld" class="text-center py-24"><p class="text-slate-500 text-sm animate-pulse">Loading...</p></div>
+<main class="max-w-[1320px] mx-auto px-6 py-8">
+<div id="ld" class="text-center py-24"><div class="inline-flex items-center gap-3"><div class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div><p class="text-slate-400 text-sm font-medium">Loading dashboard...</p></div></div>
 <div id="ct" style="display:none">
 
 <!-- KPIs -->
 <div>
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-3" id="k1"></div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="k1"></div>
 <div class="insight mt-4" id="i1"></div>
 </div>
 
-<!-- Funnel + Outcome Donut -->
+<!-- Funnel + Outcomes -->
 <div class="mt-8">
-<div class="divider"></div>
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-  <div class="card p-5 lg:col-span-2">
-    <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-4">Conversion Funnel</p>
-    <div id="fn" class="space-y-2.5"></div>
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+  <div class="card p-6 lg:col-span-3">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-5">Conversion Funnel</p>
+    <div id="fn" class="space-y-3"></div>
   </div>
-  <div class="card p-5 flex flex-col items-center justify-center relative" style="min-height:210px">
-    <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-3">Outcomes</p>
-    <canvas id="oc" width="150" height="150"></canvas>
-    <div class="dc"><p class="text-xl font-extrabold" id="bc">—</p><p class="text-[8px] text-slate-500 uppercase tracking-widest">booked</p></div>
+  <div class="card p-6 lg:col-span-2">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Call Outcomes</p>
+    <div class="flex items-center gap-6">
+      <div class="relative shrink-0" style="width:160px;height:160px">
+        <canvas id="oc" width="160" height="160"></canvas>
+        <div class="dc"><p class="text-2xl font-extrabold text-slate-800" id="bc">—</p><p class="text-[8px] text-slate-400 uppercase tracking-widest font-bold">booked</p></div>
+      </div>
+      <div class="flex-1 space-y-2" id="ol"></div>
+    </div>
   </div>
 </div>
 <div class="insight mt-4" id="i2"></div>
@@ -108,13 +104,12 @@ tr:hover td{background:rgba(59,130,246,.015)}
 
 <!-- Deals + Revenue -->
 <div class="mt-8">
-<div class="divider"></div>
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-  <div class="card p-5 lg:col-span-2">
-    <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-4">Recent Deals</p>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="card p-6 lg:col-span-2">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Recent Deals</p>
     <div class="overflow-x-auto"><table id="dt"><thead><tr><th>Lane</th><th>Listed</th><th>Agreed</th><th>Δ</th><th>Rnds</th></tr></thead><tbody></tbody></table></div>
   </div>
-  <div class="space-y-3">
+  <div class="space-y-4">
     <div class="card p-5" id="rv"></div>
     <div class="card p-5" id="pl"></div>
   </div>
@@ -124,14 +119,13 @@ tr:hover td{background:rgba(59,130,246,.015)}
 
 <!-- Lanes -->
 <div class="mt-8">
-<div class="divider"></div>
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-  <div class="card p-5">
-    <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-4">Hot Lanes</p>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="card p-6">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">🔥 Hot Lanes</p>
     <table id="hl"><thead><tr><th>Lane</th><th>Calls</th><th>Booked</th><th>Conv</th></tr></thead><tbody></tbody></table>
   </div>
-  <div class="card p-5">
-    <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-4">Unmet Demand</p>
+  <div class="card p-6">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">📦 Unmet Demand</p>
     <div id="ud"></div>
   </div>
 </div>
@@ -140,23 +134,20 @@ tr:hover td{background:rgba(59,130,246,.015)}
 
 <!-- Negotiation + Experience -->
 <div class="mt-8">
-<div class="divider"></div>
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-  <!-- Negotiation -->
-  <div class="card p-5">
-    <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-4">Negotiation</p>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="card p-6">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Negotiation Performance</p>
     <div class="grid grid-cols-2 gap-3" id="nk"></div>
     <div class="insight mt-4" id="i5"></div>
   </div>
-  <!-- Experience -->
-  <div class="card p-5">
-    <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-4">Carrier Experience</p>
-    <div class="flex gap-6">
-      <div class="relative" style="width:130px;height:130px;flex-shrink:0">
+  <div class="card p-6">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Carrier Experience</p>
+    <div class="flex items-start gap-6">
+      <div class="relative shrink-0" style="width:130px;height:130px">
         <canvas id="sc" width="130" height="130"></canvas>
-        <div class="dc"><p class="text-lg font-extrabold" id="sp">—</p><p class="text-[7px] text-slate-500 uppercase">Sat.</p></div>
+        <div class="dc"><p class="text-lg font-extrabold text-slate-800" id="sp">—</p><p class="text-[7px] text-slate-400 uppercase font-bold">Sat.</p></div>
       </div>
-      <div class="flex-1 space-y-3" id="xm"></div>
+      <div class="flex-1 space-y-2" id="xm"></div>
     </div>
     <div class="insight mt-4" id="i6"></div>
   </div>
@@ -165,16 +156,14 @@ tr:hover td{background:rgba(59,130,246,.015)}
 
 <!-- Recommendations -->
 <div class="mt-8">
-<div class="divider"></div>
-<p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mt-6 mb-3">What to do next</p>
+<p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-3">💡 What To Do Next</p>
 <div id="rc" class="space-y-2.5"></div>
 </div>
 
 <!-- Activity -->
 <div class="mt-8">
-<div class="divider"></div>
-<div class="card p-5 mt-6">
-  <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-4">Activity Log</p>
+<div class="card p-6">
+  <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Activity Log</p>
   <div class="overflow-x-auto"><table id="al"><thead><tr><th>Time</th><th>Carrier</th><th>Lane</th><th>Outcome</th><th>Sentiment</th><th>Rate</th></tr></thead><tbody></tbody></table></div>
 </div>
 </div>
@@ -182,24 +171,24 @@ tr:hover td{background:rgba(59,130,246,.015)}
 </div>
 </main>
 
-<footer class="border-t border-white/[.04] px-6 py-4 mt-10"><div class="max-w-[1280px] mx-auto flex justify-between"><p class="text-[9px] text-slate-600">Powered by HappyRobot AI · Acme Logistics</p><p class="text-[9px] text-slate-600" id="ga"></p></div></footer>
+<footer class="border-t border-slate-200 px-6 py-4 mt-10 bg-white"><div class="max-w-[1320px] mx-auto flex justify-between"><p class="text-[10px] text-slate-400 font-medium">Powered by HappyRobot AI · Acme Logistics</p><p class="text-[10px] text-slate-400 font-medium" id="ga"></p></div></footer>
 
 <script>
 const API=location.origin+'/api/v1',H={'X-API-Key':'hr-prod-2025-secure'};
 const $=id=>document.getElementById(id);
 const M=n=>n!=null?'$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}):'—';
 const P=n=>n!=null?n.toFixed(1)+'%':'—';
-const OC={booked:'#22c55e',rejected:'#ef4444',carrier_declined:'#f59e0b',no_match:'#475569',needs_follow_up:'#8b5cf6'};
+const OC={booked:'#16a34a',rejected:'#dc2626',carrier_declined:'#d97706',no_match:'#94a3b8',needs_follow_up:'#7c3aed'};
 const OL={booked:'Booked',rejected:'Rejected',carrier_declined:'Declined',no_match:'No Match',needs_follow_up:'Follow Up'};
-const SC={positive:'#22c55e',neutral:'#3b82f6',negative:'#f59e0b',hostile:'#ef4444'};
+const SC={positive:'#16a34a',neutral:'#2563eb',negative:'#d97706',hostile:'#dc2626'};
 function TA(iso){if(!iso)return'—';const m=Math.floor((Date.now()-new Date(iso))/6e4);return m<1?'Now':m<60?m+'m':m<1440?Math.floor(m/60)+'h':Math.floor(m/1440)+'d'}
-function tip(label,explain){return`<div class="tip"><p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">${label}<span class="tt">${explain}</span></p></div>`}
+function tip(label,explain){return`<div class="tip"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold">${label}<span class="tt">${explain}</span></p></div>`}
 
 async function L(){
   try{
     const r=await fetch(`${API}/dashboard/data?days=${$('ps').value}`,{headers:H});
     const d=await r.json();R(d);$('ld').style.display='none';$('ct').style.display='block';
-  }catch(e){$('ld').innerHTML='<p class="text-red-400 text-sm">Failed to load</p>'}
+  }catch(e){$('ld').innerHTML='<p class="text-red-500 text-sm">Failed to load dashboard</p>'}
 }
 
 function R(d){
@@ -209,53 +198,68 @@ function R(d){
   // === KPIs ===
   const ad=xp.avg_call_duration_seconds?(xp.avg_call_duration_seconds/60).toFixed(1):'0';
   const kpis=[
-    {l:'Calls Handled',v:ex.total_calls,s:`${fn.booked||0} booked`,c:'#3b82f6',
-     tt:'Total inbound carrier calls handled by the AI agent. Includes all outcomes: booked, rejected, declined, no match, and follow-ups.'},
-    {l:'Conversion',v:P(ex.conversion_rate),s:`${fn.booked||0} of ${ex.total_calls}`,c:'#22c55e',
-     tt:'Booked calls ÷ total calls. Measures how effectively the AI converts inbound inquiries into confirmed bookings.'},
-    {l:'Revenue',v:M(ex.total_revenue),s:`avg ${M(rv.avg_deal_size||0)}`,c:'#f59e0b',
-     tt:'Sum of agreed prices from all booked loads. Represents total carrier-side revenue generated through the AI agent.'},
-    {l:'Avg Concession',v:P(ex.avg_concession_pct),s:'above listed rate',c:ex.avg_concession_pct>5?'#f59e0b':'#22c55e',
-     tt:'Average % the AI stretches above the loadboard rate during negotiation. Lower is better. Human reps typically concede 8-12%. Under 5% = strong rate discipline.'},
-    {l:'Cost Savings',v:M(ex.cost_savings),s:`${ex.roi_pct}% ROI`,c:'#22c55e',
-     tt:`Based on $18/call for human reps (industry avg $15-25) vs $1.50/call for AI. Savings = (${ex.total_calls} calls × $18) − (${ex.total_calls} calls × $1.50).`},
+    {l:'Calls Handled',v:ex.total_calls,s:`${fn.booked||0} booked`,c:'#3b82f6',bg:'from-blue-500 to-blue-600',
+     tt:'Total inbound carrier calls handled by the AI agent. Includes booked, rejected, declined, no match, and follow-ups.'},
+    {l:'Conversion Rate',v:P(ex.conversion_rate),s:`${fn.booked||0} of ${ex.total_calls}`,c:'#16a34a',bg:'from-emerald-500 to-emerald-600',
+     tt:'Booked calls ÷ total calls. Measures how effectively the AI converts inbound inquiries into bookings.'},
+    {l:'Revenue Booked',v:M(ex.total_revenue),s:`avg deal ${M(rv.avg_deal_size||0)}`,c:'#d97706',bg:'from-amber-500 to-orange-500',
+     tt:'Sum of agreed prices from all booked loads. Total carrier-side revenue generated through the AI agent.'},
+    {l:'Cost Savings',v:M(ex.cost_savings),s:`${ex.roi_pct}% ROI vs human`,c:'#7c3aed',bg:'from-violet-500 to-purple-600',
+     tt:`Human reps cost ~$18/call (industry avg). AI costs ~$1.50/call. Savings = (${ex.total_calls} × $18) − (${ex.total_calls} × $1.50).`},
   ];
   $('k1').innerHTML=kpis.map(k=>`
-    <div class="kpi p-4 tip">
+    <div class="kpi tip">
       <span class="tt">${k.tt}</span>
-      <p class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">${k.l}</p>
-      <p class="text-[24px] font-extrabold mt-1.5" style="color:${k.c}">${k.v}</p>
-      <p class="text-[10px] text-slate-500 mt-1">${k.s}</p>
+      <div class="kpi-accent bg-gradient-to-r ${k.bg}"></div>
+      <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">${k.l}</p>
+      <p class="text-3xl font-extrabold mt-2" style="color:${k.c}">${k.v}</p>
+      <p class="text-[11px] text-slate-400 mt-1 font-medium">${k.s}</p>
     </div>
   `).join('');
 
-  $('i1').innerHTML=`<p>AI handled <strong>${ex.total_calls} calls</strong>. Human cost: <strong>${M(ex.human_cost_baseline)}</strong>, AI cost: <strong>${M(ex.ai_cost)}</strong> — saving <strong style="color:#22c55e">${M(ex.cost_savings)}</strong>.</p>`;
+  $('i1').innerHTML=`<p>AI handled <strong>${ex.total_calls} calls</strong>. Human team would cost <strong>${M(ex.human_cost_baseline)}</strong> vs <strong>${M(ex.ai_cost)}</strong> with AI — saving <strong style="color:#16a34a">${M(ex.cost_savings)}</strong>.</p>`;
 
   // === Funnel ===
-  const st=[
-    {n:'Inbound',c:fn.total_calls,cl:'#3b82f6'},
-    {n:'Verified',c:fn.fmcsa_verified,cl:'#60a5fa'},
-    {n:'Pitched',c:fn.loads_pitched,cl:'#8b5cf6'},
-    {n:'Negotiated',c:fn.entered_negotiation,cl:'#f59e0b'},
-    {n:'Booked',c:fn.booked,cl:'#22c55e'}
+  const stages=[
+    {n:'Inbound Calls',c:fn.total_calls,cl:'#3b82f6',bg:'linear-gradient(135deg,#3b82f6,#2563eb)'},
+    {n:'FMCSA Verified',c:fn.fmcsa_verified,cl:'#6366f1',bg:'linear-gradient(135deg,#6366f1,#4f46e5)'},
+    {n:'Load Pitched',c:fn.loads_pitched,cl:'#8b5cf6',bg:'linear-gradient(135deg,#8b5cf6,#7c3aed)'},
+    {n:'Negotiated',c:fn.entered_negotiation,cl:'#f59e0b',bg:'linear-gradient(135deg,#f59e0b,#d97706)'},
+    {n:'Booked',c:fn.booked,cl:'#16a34a',bg:'linear-gradient(135deg,#22c55e,#16a34a)'},
   ];
-  const mx=st[0].c||1;
-  $('fn').innerHTML=st.map((s,i)=>{
-    const w=Math.max((s.c/mx)*100,8);
-    const pt=i>0&&st[i-1].c>0?Math.round(s.c/st[i-1].c*100):null;
-    const dr=pt!==null&&pt<100?`<span class="text-[9px] text-slate-500 ml-2">${pt}%</span>`:'';
-    return`<div class="flex items-center gap-3"><div class="w-24 text-[11px] text-slate-400 text-right shrink-0 font-medium">${s.n}</div><div class="flex-1 bg-slate-800/40 rounded-lg h-9 relative"><div class="fb" style="width:${w}%;background:${s.cl}">${s.c}</div></div>${dr}</div>`;
+  const mx=stages[0].c||1;
+  $('fn').innerHTML=stages.map((s,i)=>{
+    const w=Math.max((s.c/mx)*100,12);
+    const pt=i>0&&stages[i-1].c>0?Math.round(s.c/stages[i-1].c*100):null;
+    const arrow=i>0?`<div class="funnel-arrow">↓ <span class="text-[10px] font-bold ${pt<50?'text-red-400':pt<80?'text-amber-500':'text-emerald-500'}">${pt}%</span></div>`:'';
+    return`${arrow}<div class="funnel-step"><div class="w-28 text-right shrink-0"><p class="text-xs font-bold text-slate-600">${s.n}</p></div><div class="funnel-shape" style="width:${w}%;background:${s.bg}"><span>${s.c}</span><span class="text-xs font-medium opacity-75">${i>0&&pt!==null?pt+'%':''}</span></div></div>`;
   }).join('');
 
-  // Outcome donut
+  // Outcome donut + legends
+  const oKeys=Object.keys(OL);
+  const oVals=oKeys.map(k=>{const m=fn.drop_offs||{};if(k==='booked')return fn.booked;if(k==='rejected')return m.negotiation_failed||0;if(k==='carrier_declined')return m.declined_after_pitch||0;if(k==='no_match')return m.no_load_match||0;if(k==='needs_follow_up')return Math.max(0,fn.total_calls-fn.booked-(m.negotiation_failed||0)-(m.declined_after_pitch||0)-(m.no_load_match||0)-(m.verification_fail||0));return 0});
   if(window._oc)window._oc.destroy();
-  const oLabels=Object.keys(OL);const oVals=oLabels.map(k=>{const m=fn.drop_offs||{};if(k==='booked')return fn.booked;if(k==='rejected')return m.negotiation_failed||0;if(k==='carrier_declined')return m.declined_after_pitch||0;if(k==='no_match')return m.no_load_match||0;if(k==='needs_follow_up')return Math.max(0,fn.total_calls-fn.booked-(m.negotiation_failed||0)-(m.declined_after_pitch||0)-(m.no_load_match||0)-(m.verification_fail||0));return 0});
-  window._oc=new Chart($('oc').getContext('2d'),{type:'doughnut',data:{labels:oLabels.map(k=>OL[k]),datasets:[{data:oVals,backgroundColor:oLabels.map(k=>OC[k]),borderWidth:0}]},options:{cutout:'68%',plugins:{legend:{display:false}},responsive:false}});
+  window._oc=new Chart($('oc').getContext('2d'),{type:'doughnut',data:{labels:oKeys.map(k=>OL[k]),datasets:[{data:oVals,backgroundColor:oKeys.map(k=>OC[k]),borderWidth:2,borderColor:'#fff'}]},options:{cutout:'65%',plugins:{legend:{display:false}},responsive:false}});
   $('bc').textContent=fn.booked||0;
 
+  // Outcome legends
+  const oTotal=oVals.reduce((a,b)=>a+b,0)||1;
+  $('ol').innerHTML=oKeys.map((k,i)=>`
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-sm shrink-0" style="background:${OC[k]}"></span>
+        <span class="text-xs font-medium text-slate-600">${OL[k]}</span>
+      </div>
+      <div class="text-right">
+        <span class="text-xs font-bold text-slate-800">${oVals[i]}</span>
+        <span class="text-[10px] text-slate-400 ml-1">${Math.round(oVals[i]/oTotal*100)}%</span>
+      </div>
+    </div>
+  `).join('');
+
   const dp=fn.drop_offs||{};const bd=Object.entries(dp).sort((a,b)=>b[1]-a[1])[0];
-  let fm='Funnel is clean — no major drop-offs.';
-  if(bd&&bd[1]>0){const rs={verification_fail:'FMCSA verification',no_load_match:'load inventory gaps',declined_after_pitch:'carriers declining loads',negotiation_failed:'pricing gaps'};fm=`<strong>${bd[1]} calls</strong> lost to ${rs[bd[0]]||bd[0]}. ${bd[0]==='no_load_match'?'Source inventory on requested lanes.':bd[0]==='negotiation_failed'?'Review ceiling pricing.':'Investigate root cause.'}`}
+  let fm='Funnel is healthy — no significant drop-offs detected.';
+  if(bd&&bd[1]>0){const rs={verification_fail:'FMCSA verification',no_load_match:'load inventory gaps',declined_after_pitch:'carriers declining pitched loads',negotiation_failed:'pricing gaps in negotiation'};fm=`Biggest loss: <strong>${bd[1]} calls</strong> to ${rs[bd[0]]||bd[0]}. ${bd[0]==='no_load_match'?'Source inventory on requested lanes.':bd[0]==='negotiation_failed'?'Review ceiling pricing on contested lanes.':'Investigate root cause.'}`}
   $('i2').innerHTML=`<p>${fm}</p>`;
 
   // === Deals ===
@@ -263,87 +267,88 @@ function R(d){
   $('dt').querySelector('tbody').innerHTML=deals.length?deals.map(dl=>{
     const delta=(dl.agreed_price!=null&&dl.initial_rate!=null)?dl.agreed_price-dl.initial_rate:0;
     const dpct=dl.initial_rate>0?(delta/dl.initial_rate*100).toFixed(1):0;
-    const dc2=delta===0?'text-emerald-400':delta>0?'text-amber-400':'text-emerald-400';
+    const dc2=delta===0?'text-emerald-600':delta>0?'text-amber-600':'text-emerald-600';
     const dt2=delta===0?'At rate':delta>0?`+${M(delta)} (${dpct}%)`:'—';
-    return`<tr><td class="text-white font-semibold text-xs">${dl.lane||'—'}</td><td class="mono text-slate-400">${M(dl.initial_rate)}</td><td class="mono text-white">${M(dl.agreed_price)}</td><td class="${dc2} text-xs font-semibold">${dt2}</td><td><span class="tag ${dl.rounds===0?'tg':dl.rounds<=2?'tb':'ta'}">${dl.rounds}R</span></td></tr>`;
-  }).join(''):'<tr><td colspan="5" class="text-center text-slate-600 py-8">No deals yet</td></tr>';
+    return`<tr><td class="font-semibold">${dl.lane||'—'}</td><td class="mono text-slate-400">${M(dl.initial_rate)}</td><td class="mono font-semibold">${M(dl.agreed_price)}</td><td class="${dc2} text-xs font-bold">${dt2}</td><td><span class="tag ${dl.rounds===0?'tg':dl.rounds<=2?'tb':'ta'}">${dl.rounds}R</span></td></tr>`;
+  }).join(''):'<tr><td colspan="5" class="text-center text-slate-400 py-8">No deals yet</td></tr>';
 
   $('rv').innerHTML=`
-    ${tip('Revenue','Total agreed prices from booked loads. Avg deal = total revenue ÷ number of bookings.')}
-    <p class="text-3xl font-extrabold mt-2">${M(ex.total_revenue)}</p>
-    <div class="mt-3 pt-3 border-t border-white/[.05] space-y-1.5">
-      <div class="flex justify-between text-xs"><span class="text-slate-500">Avg Deal</span><span class="text-white font-medium">${M(rv.avg_deal_size)}</span></div>
-      <div class="flex justify-between text-xs"><span class="text-slate-500">Bookings</span><span class="text-white font-medium">${fn.booked||0}</span></div>
+    ${tip('Revenue','Total agreed prices from all booked loads. Avg deal = revenue ÷ bookings.')}
+    <p class="text-3xl font-extrabold mt-2 text-slate-800">${M(ex.total_revenue)}</p>
+    <div class="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+      <div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Avg Deal</span><span class="font-bold">${M(rv.avg_deal_size)}</span></div>
+      <div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Bookings</span><span class="font-bold">${fn.booked||0}</span></div>
+      <div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Avg Concession</span><span class="font-bold ${ex.avg_concession_pct>5?'text-amber-600':'text-emerald-600'}">${P(ex.avg_concession_pct)}</span></div>
     </div>`;
 
   $('pl').innerHTML=`
-    ${tip('Agent P&L','Cost comparison: what these calls would cost with human reps ($18/call avg) vs AI ($1.50/call).')}
+    ${tip('Agent P&L','Cost comparison: human reps ($18/call avg) vs AI ($1.50/call). Net savings shown below.')}
     <div class="mt-2 space-y-1.5">
-      <div class="flex justify-between text-xs"><span class="text-slate-500">Human (${ex.total_calls}×$18)</span><span class="text-red-400">${M(ex.human_cost_baseline)}</span></div>
-      <div class="flex justify-between text-xs"><span class="text-slate-500">AI (${ex.total_calls}×$1.50)</span><span class="text-emerald-400">${M(ex.ai_cost)}</span></div>
-      <div class="flex justify-between text-xs mt-2 pt-2 border-t border-white/[.05]"><span class="text-slate-500">Savings</span><span class="text-emerald-400 font-bold">${M(ex.cost_savings)}</span></div>
+      <div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Human (${ex.total_calls}×$18)</span><span class="text-red-500 font-bold">${M(ex.human_cost_baseline)}</span></div>
+      <div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">AI (${ex.total_calls}×$1.50)</span><span class="text-emerald-600 font-bold">${M(ex.ai_cost)}</span></div>
+      <div class="flex justify-between text-xs mt-2 pt-2 border-t border-slate-100"><span class="text-slate-400 font-medium">Net Savings</span><span class="text-emerald-600 font-extrabold text-sm">${M(ex.cost_savings)}</span></div>
     </div>`;
 
-  const cm=ex.avg_concession_pct>0?`Average concession <strong>${P(ex.avg_concession_pct)}</strong> above listed rate — well below typical human 8-12% variance.`:'All deals closed at listed rate. Perfect rate discipline.';
+  const cm=ex.avg_concession_pct>0?`Average concession <strong>${P(ex.avg_concession_pct)}</strong> above listed rate — well below typical human rep variance of 8-12%.`:'All deals closed at listed rate. Perfect rate discipline.';
   $('i3').innerHTML=`<p>${cm}</p>`;
 
   // === Lanes ===
   const hl2=ln.top_lanes||[];
-  $('hl').querySelector('tbody').innerHTML=hl2.length?hl2.map(l=>{const lane=l.origin+' → '+l.destination;return`<tr><td class="text-white font-semibold text-xs">${lane}</td><td class="mono text-slate-400">${l.total_calls}</td><td class="mono text-white">${l.booked}</td><td class="${l.conversion_pct>=60?'text-emerald-400':l.conversion_pct>=30?'text-amber-400':'text-red-400'} font-semibold">${P(l.conversion_pct)}</td></tr>`}).join(''):'<tr><td colspan="4" class="text-center text-slate-600 py-6">No data</td></tr>';
+  $('hl').querySelector('tbody').innerHTML=hl2.length?hl2.map(l=>{const lane=l.origin+' → '+l.destination;return`<tr><td class="font-semibold">${lane}</td><td class="mono text-slate-400">${l.total_calls}</td><td class="mono font-semibold">${l.booked}</td><td class="${l.conversion_pct>=60?'text-emerald-600':l.conversion_pct>=30?'text-amber-600':'text-red-500'} font-bold">${P(l.conversion_pct)}</td></tr>`}).join(''):'<tr><td colspan="4" class="text-center text-slate-400 py-6">No data yet</td></tr>';
 
   const um=ln.unmet_demand||[];
-  $('ud').innerHTML=um.length?um.map(u=>`<div class="flex items-center justify-between py-2.5 border-b border-white/[.04] last:border-0"><div><p class="text-sm text-white font-semibold">${u.origin||'?'} → ${u.destination||'Open'}</p><p class="text-[10px] text-slate-500 mt-0.5">${u.equipment_type||'Any'} · ${u.carrier_requests} request(s)</p></div><span class="tag tr">Source</span></div>`).join(''):'<p class="text-sm text-slate-600 py-6 text-center">No unmet demand</p>';
+  $('ud').innerHTML=um.length?um.map(u=>`<div class="flex items-center justify-between py-3 border-b border-slate-100 last:border-0"><div><p class="text-sm font-semibold text-slate-700">${u.origin||'?'} → ${u.destination||'Open'}</p><p class="text-[10px] text-slate-400 mt-0.5 font-medium">${u.equipment_type||'Any'} · ${u.carrier_requests} request(s)</p></div><span class="tag tr">Source</span></div>`).join(''):'<p class="text-sm text-slate-400 py-6 text-center">No unmet demand recorded</p>';
 
   const tl=hl2[0];const tlN=tl?tl.origin+' → '+tl.destination:'';
-  $('i4').innerHTML=`<p>${tl?`<strong>${tlN}</strong> converts at ${P(tl.conversion_pct)}. ${um.length?um.length+' lane(s) with unmet carrier demand.':''}`:um.length?um.length+' lane(s) requested with no loads.':'More data needed to identify patterns.'}</p>`;
+  $('i4').innerHTML=`<p>${tl?`<strong>${tlN}</strong> converts at ${P(tl.conversion_pct)}. ${um.length?um.length+' lane(s) with unmet carrier demand — source inventory.':''}`:um.length?um.length+' lane(s) requested with no loads available.':'More call data needed to identify lane patterns.'}</p>`;
 
   // === Negotiation ===
-  const ar=xp.avg_negotiation_rounds||0;const wa=(rj.breakdown||{}).rejected||0;const tn=fn.entered_negotiation||0;
+  const ar=xp.avg_negotiation_rounds||0;const wa=(rj.breakdown||{}).rejected||0;
   let r0=0,r1=0,r2=0,r3=0;deals.forEach(dl=>{if(dl.rounds===0)r0++;else if(dl.rounds===1)r1++;else if(dl.rounds===2)r2++;else r3++});
   const td2=deals.length||1;
   const nk=[
-    {l:'Avg Rounds',v:ar.toFixed(1),tt:'Average negotiation rounds before deal closes. Lower = faster close. 0 = carrier accepted immediately.'},
-    {l:'Quick Close',v:P(((r0+r1+r2)/td2)*100),tt:'Percentage of deals that closed in 2 rounds or fewer. Higher = more efficient negotiation.'},
-    {l:'Walk-aways',v:wa,tt:'Deals where negotiation failed after carrier and agent could not agree on price. Higher = pricing may be off-market.'},
-    {l:'Failed Gap',v:rj.avg_negotiation_gap_pct?P(rj.avg_negotiation_gap_pct):'—',tt:'How far apart we were from our ceiling when deals fell through. Smaller gap = close to deal, consider stretching ceiling.'},
+    {l:'Avg Rounds',v:ar.toFixed(1),tt:'Average negotiation rounds to close. Lower = faster. 0 = immediate accept.'},
+    {l:'Quick Close (≤2R)',v:P(((r0+r1+r2)/td2)*100),tt:'Deals closed in 2 rounds or fewer. Higher = more efficient.'},
+    {l:'Walk-aways',v:wa,tt:'Negotiations that failed. Higher = pricing may be off-market.'},
+    {l:'Failed Gap',v:rj.avg_negotiation_gap_pct?P(rj.avg_negotiation_gap_pct):'—',tt:'Distance from ceiling when deals failed. Smaller = close to deal.'},
   ];
-  $('nk').innerHTML=nk.map(k=>`<div class="tip p-3 rounded-lg bg-white/[.02] border border-white/[.04]"><span class="tt">${k.tt}</span><p class="text-[9px] uppercase tracking-wider text-slate-500 font-bold">${k.l}</p><p class="text-xl font-extrabold mt-1 text-white">${k.v}</p></div>`).join('');
-  $('i5').innerHTML=`<p>${ar<=2?`Most deals close in ≤2 rounds. ${wa>0?wa+' walk-away(s) — review ceiling.':'Efficient.'}`:'Avg '+ar.toFixed(1)+' rounds — carriers pushing. Adjust opening rates.'}</p>`;
+  $('nk').innerHTML=nk.map(k=>`<div class="tip p-4 rounded-xl bg-slate-50 border border-slate-100"><span class="tt">${k.tt}</span><p class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">${k.l}</p><p class="text-xl font-extrabold mt-1 text-slate-800">${k.v}</p></div>`).join('');
+  $('i5').innerHTML=`<p>${ar<=2?`Most deals close in ≤2 rounds. ${wa>0?wa+' walk-away(s) — review ceiling pricing.':'No walk-aways — efficient negotiation.'}`:'Avg '+ar.toFixed(1)+' rounds to close — carriers pushing hard. Consider adjusting opening rates.'}</p>`;
 
   // === Experience ===
   const sd=xp.sentiment||{};const sl=['positive','neutral','negative','hostile'];const sv=sl.map(s=>sd[s]||0);
   if(window._sc)window._sc.destroy();
-  window._sc=new Chart($('sc').getContext('2d'),{type:'doughnut',data:{labels:sl.map(s=>s[0].toUpperCase()+s.slice(1)),datasets:[{data:sv,backgroundColor:sl.map(s=>SC[s]),borderWidth:0}]},options:{cutout:'70%',plugins:{legend:{display:false}},responsive:false}});
+  window._sc=new Chart($('sc').getContext('2d'),{type:'doughnut',data:{labels:sl.map(s=>s[0].toUpperCase()+s.slice(1)),datasets:[{data:sv,backgroundColor:sl.map(s=>SC[s]),borderWidth:2,borderColor:'#fff'}]},options:{cutout:'68%',plugins:{legend:{display:false}},responsive:false}});
   $('sp').textContent=P(xp.satisfaction_rate);
 
   $('xm').innerHTML=`
-    ${sl.map(s=>`<div class="flex items-center justify-between text-xs"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full shrink-0" style="background:${SC[s]}"></span><span class="text-slate-400">${s[0].toUpperCase()+s.slice(1)}</span></div><span class="text-white font-semibold">${sd[s]||0}</span></div>`).join('')}
-    <div class="pt-2 mt-1 border-t border-white/[.05]">
-      <div class="flex justify-between text-xs"><span class="text-slate-500">Unique carriers</span><span class="text-white font-medium">${xp.unique_carriers}</span></div>
-      <div class="flex justify-between text-xs mt-1"><span class="text-slate-500">Repeat callers</span><span class="text-blue-400 font-medium">${xp.repeat_carriers} (${P(xp.repeat_rate)})</span></div>
+    ${sl.map(s=>`<div class="flex items-center justify-between text-xs"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm shrink-0" style="background:${SC[s]}"></span><span class="text-slate-500 font-medium">${s[0].toUpperCase()+s.slice(1)}</span></div><span class="font-bold text-slate-700">${sd[s]||0}</span></div>`).join('')}
+    <div class="pt-2 mt-2 border-t border-slate-100 space-y-1.5">
+      <div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Unique carriers</span><span class="font-bold text-slate-700">${xp.unique_carriers}</span></div>
+      <div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Repeat callers</span><span class="font-bold text-blue-600">${xp.repeat_carriers} (${P(xp.repeat_rate)})</span></div>
     </div>`;
 
   const hc=sd.hostile||0;
-  $('i6').innerHTML=`<p>${hc>0?`${P(xp.satisfaction_rate)} satisfaction. <strong style="color:#ef4444">${hc} hostile</strong> — review de-escalation.`:`${P(xp.satisfaction_rate)} satisfaction. ${xp.repeat_carriers} repeat caller(s).`}</p>`;
+  $('i6').innerHTML=`<p>${hc>0?`${P(xp.satisfaction_rate)} satisfaction. <strong style="color:#dc2626">${hc} hostile</strong> interaction(s) — review de-escalation.`:`${P(xp.satisfaction_rate)} carrier satisfaction. ${xp.repeat_carriers} repeat caller(s) coming back.`}</p>`;
 
   // === Recommendations (max 4) ===
   const recs=[];
-  um.slice(0,2).forEach(u=>recs.push({p:0,i:'📦',t:`Source <strong>${u.equipment_type||'loads'}</strong>: ${u.origin||'?'} → ${u.destination||'Open'} — ${u.carrier_requests} carrier(s) requesting.`,g:'Source'}));
-  hl2.filter(l=>l.conversion_pct>=60&&l.booked>=1).slice(0,1).forEach(l=>recs.push({p:1,i:'🔥',t:`<strong>${l.origin} → ${l.destination}</strong> converts at ${P(l.conversion_pct)} — increase inventory.`,g:'Scale Up'}));
-  if(wa>0)recs.push({p:1,i:'💰',t:`${wa} failed negotiation(s). Gap: ${P(rj.avg_negotiation_gap_pct)} from ceiling. Consider +2% on contested lanes.`,g:'Pricing'});
-  if(hc>0&&recs.length<4)recs.push({p:2,i:'⚡',t:`${hc} hostile interaction(s) — review transcripts and refine de-escalation.`,g:'Training'});
-  if(xp.repeat_carriers>0&&recs.length<4)recs.push({p:2,i:'⭐',t:`${xp.repeat_carriers} repeat carrier(s) — assign dedicated rep for top relationships.`,g:'Nurture'});
-  if(!recs.length)recs.push({p:2,i:'✅',t:'System performing well. Monitor as volume increases.',g:'On Track'});
+  um.slice(0,2).forEach(u=>recs.push({p:0,i:'📦',t:`Source <strong>${u.equipment_type||'loads'}</strong>: ${u.origin||'?'} → ${u.destination||'Open'} — ${u.carrier_requests} carrier(s) requesting this lane.`,g:'Source'}));
+  hl2.filter(l=>l.conversion_pct>=60&&l.booked>=1).slice(0,1).forEach(l=>recs.push({p:1,i:'🔥',t:`<strong>${l.origin} → ${l.destination}</strong> converts at ${P(l.conversion_pct)} — increase inventory on this lane.`,g:'Scale Up'}));
+  if(wa>0)recs.push({p:1,i:'💰',t:`${wa} failed negotiation(s). Gap: ${P(rj.avg_negotiation_gap_pct)} from ceiling. Consider stretching +2% on contested lanes.`,g:'Pricing'});
+  if(hc>0&&recs.length<4)recs.push({p:2,i:'⚡',t:`${hc} hostile interaction(s) — review call transcripts and refine de-escalation prompts.`,g:'Training'});
+  if(xp.repeat_carriers>0&&recs.length<4)recs.push({p:2,i:'⭐',t:`${xp.repeat_carriers} repeat carrier(s) driving bookings — consider assigning dedicated rep.`,g:'Nurture'});
+  if(!recs.length)recs.push({p:2,i:'✅',t:'System performing well. Continue monitoring as call volume grows.',g:'On Track'});
   recs.sort((a,b)=>a.p-b.p);
-  $('rc').innerHTML=recs.slice(0,4).map(r=>{const tc=r.p===0?'tr':r.p===1?'ta':'tg';return`<div class="rec flex items-start gap-3"><span class="text-base mt-0.5">${r.i}</span><p class="flex-1 text-[13px] text-slate-300 leading-relaxed">${r.t}</p><span class="tag ${tc} shrink-0">${r.g}</span></div>`}).join('');
+  $('rc').innerHTML=recs.slice(0,4).map(r=>{const tc=r.p===0?'tr':r.p===1?'ta':'tg';return`<div class="rec flex items-start gap-3"><span class="text-base mt-0.5">${r.i}</span><p class="flex-1 text-[13px] text-slate-600 leading-relaxed">${r.t}</p><span class="tag ${tc} shrink-0">${r.g}</span></div>`}).join('');
 
   // === Activity ===
   $('al').querySelector('tbody').innerHTML=rc.length?rc.map(c=>{
-    const ol=OL[c.outcome]||c.outcome;const oc2=OC[c.outcome]||'#475569';
+    const ol=OL[c.outcome]||c.outcome;const oc2=OC[c.outcome]||'#94a3b8';
     const ed=c.extracted_data||{};const ln2=ed.lane||c.load_id||'—';
     const rt=c.outcome==='booked'?M(c.agreed_price):c.initial_rate?M(c.initial_rate):'—';
-    return`<tr><td class="text-slate-500 text-[11px]">${TA(c.created_at)}</td><td class="text-white text-xs font-medium">${c.carrier_name||c.carrier_mc||'—'}</td><td class="text-slate-400 text-xs">${ln2}</td><td><span class="tag" style="background:${oc2}14;color:${oc2}">${ol}</span></td><td><span class="w-2 h-2 rounded-full inline-block align-middle" style="background:${SC[c.sentiment]||'#3b82f6'}"></span> <span class="text-[11px] text-slate-400">${c.sentiment||'—'}</span></td><td class="mono text-xs">${rt}</td></tr>`;
-  }).join(''):'<tr><td colspan="6" class="text-center text-slate-600 py-8">No calls yet</td></tr>';
+    return`<tr><td class="text-slate-400 text-[11px] font-medium">${TA(c.created_at)}</td><td class="text-xs font-semibold">${c.carrier_name||c.carrier_mc||'—'}</td><td class="text-slate-500 text-xs">${ln2}</td><td><span class="tag" style="background:${oc2}18;color:${oc2}">${ol}</span></td><td><span class="w-2.5 h-2.5 rounded-full inline-block align-middle" style="background:${SC[c.sentiment]||'#2563eb'}"></span> <span class="text-[11px] text-slate-500">${c.sentiment||'—'}</span></td><td class="mono text-xs font-medium">${rt}</td></tr>`;
+  }).join(''):'<tr><td colspan="6" class="text-center text-slate-400 py-8">No calls yet</td></tr>';
 }
 
 L();setInterval(L,30000);
