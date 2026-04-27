@@ -13,7 +13,7 @@ body{background:#f0f2f7;color:#1e293b;font-family:'Plus Jakarta Sans',sans-serif
 .mono{font-family:'JetBrains Mono',monospace}
 .card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .25s}
 .card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07)}
-.kpi{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;position:relative;overflow:hidden;transition:all .3s;cursor:default}
+.kpi{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;position:relative;transition:all .3s;cursor:default}
 .kpi:hover{box-shadow:0 6px 24px rgba(0,0,0,.08);transform:translateY(-2px)}
 .kpi-accent{position:absolute;top:0;left:0;right:0;height:4px;border-radius:16px 16px 0 0}
 .insight{background:#f8fafc;border-left:4px solid #3b82f6;border-radius:0 12px 12px 0;padding:14px 20px;margin-top:16px}
@@ -21,8 +21,9 @@ body{background:#f0f2f7;color:#1e293b;font-family:'Plus Jakarta Sans',sans-serif
 .insight strong{color:#1e293b}
 .tag{padding:3px 10px;border-radius:6px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
 .tg{background:#dcfce7;color:#16a34a}.ta{background:#fef3c7;color:#d97706}.tr{background:#fee2e2;color:#dc2626}.tb{background:#dbeafe;color:#2563eb}.tp{background:#ede9fe;color:#7c3aed}
-.tip{position:relative}
-.tip .tt{visibility:hidden;opacity:0;background:#1e293b;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:.73rem;line-height:1.55;width:270px;position:absolute;z-index:99;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);transition:opacity .15s;box-shadow:0 12px 32px rgba(0,0,0,.25);pointer-events:none}
+.tip{position:relative;z-index:1}
+.tip:hover{z-index:50}
+.tip .tt{visibility:hidden;opacity:0;background:#1e293b;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:.73rem;line-height:1.55;width:270px;position:absolute;z-index:999;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);transition:opacity .15s;box-shadow:0 12px 32px rgba(0,0,0,.3);pointer-events:none}
 .tip .tt::after{content:'';position:absolute;top:100%;left:50%;margin-left:-5px;border:5px solid transparent;border-top-color:#1e293b}
 .tip:hover .tt{visibility:visible;opacity:1}
 .rec{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;transition:all .2s}
@@ -113,14 +114,14 @@ tr:hover td{background:#f8fafc}
 <div class="mt-8">
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
   <!-- Coverage -->
-  <div class="card p-6 relative overflow-hidden">
-    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full"></div>
+  <div class="card p-6 relative">
+    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full pointer-events-none"></div>
     <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4 relative">🕐 Coverage Comparison</p>
     <div class="space-y-4 relative" id="cov"></div>
   </div>
   <!-- Scale Projector -->
-  <div class="card p-6 relative overflow-hidden">
-    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-emerald-50 to-transparent rounded-bl-full"></div>
+  <div class="card p-6 relative">
+    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-emerald-50 to-transparent rounded-bl-full pointer-events-none"></div>
     <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1 relative">📈 Scale Projector</p>
     <p class="text-[10px] text-slate-400 mb-4 relative">Your current metrics → projected at scale</p>
     <div class="relative" id="scale"></div>
@@ -287,18 +288,58 @@ function R(d){
 
   // === COVERAGE COMPARISON ===
   const humanHrs=45,aiHrs=168,mult=(aiHrs/humanHrs).toFixed(1);
+  const humanPct=Math.round(humanHrs/aiHrs*100);
+  const missedPct=100-humanPct;
+  const weekendHrs=48; // Sat+Sun = 48 hours uncovered
+  const nightHrs=75; // 5 weeknights × 15 off-hours (5pm-8am)
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const heatmap=days.map((d,i)=>{
+    const isWeekday=i<5;
+    // Human: 8am-5pm weekdays only. AI: all hours.
+    let cells='';
+    for(let h=0;h<24;h+=3){
+      const humanOn=isWeekday&&h>=8&&h<17;
+      const block=humanOn?'bg-slate-300':'bg-red-100';
+      cells+=`<div class="w-full h-3 rounded-sm ${block}" title="${d} ${h}:00 — ${humanOn?'Covered':'No coverage'}"></div>`;
+    }
+    return`<div><p class="text-[8px] text-slate-400 font-bold text-center mb-1">${d}</p><div class="grid grid-rows-8 gap-0.5">${cells}</div></div>`;
+  }).join('');
+
   $('cov').innerHTML=`
     <div>
-      <div class="flex justify-between text-xs mb-1.5"><span class="font-bold text-slate-600">Human Team</span><span class="text-slate-400 font-medium tip">45 hrs/week<span class="tt">Typical brokerage: M-F 8am-5pm = 9 hrs × 5 days = 45 hours. No weekends, no nights.</span></span></div>
-      <div class="w-full bg-slate-100 rounded-lg h-8"><div class="cov-bar" style="width:${(humanHrs/aiHrs*100).toFixed(0)}%;background:linear-gradient(135deg,#94a3b8,#64748b)">${humanHrs}h</div></div>
+      <div class="flex justify-between text-xs mb-1.5"><span class="font-bold text-slate-600 tip">Human Team<span class="tt">Typical brokerage staffing: Monday–Friday, 8am–5pm. 9 hours × 5 days = 45 hours per week. No coverage on nights, weekends, or holidays.</span></span><span class="text-slate-400 font-medium">${humanHrs} hrs/week · <strong class="text-slate-600">${humanPct}%</strong> of week</span></div>
+      <div class="w-full bg-slate-100 rounded-lg h-7"><div class="cov-bar" style="width:${humanPct}%;background:linear-gradient(135deg,#94a3b8,#64748b)">${humanHrs}h</div></div>
     </div>
     <div>
-      <div class="flex justify-between text-xs mb-1.5"><span class="font-bold text-blue-600">AI Agent</span><span class="text-slate-400 font-medium tip">168 hrs/week<span class="tt">AI operates 24 hours × 7 days = 168 hours. No breaks, no PTO, no shift changes. Carriers calling at 2am get the same experience as 2pm.</span></span></div>
-      <div class="w-full bg-slate-100 rounded-lg h-8"><div class="cov-bar" style="width:100%;background:linear-gradient(135deg,#3b82f6,#2563eb)">${aiHrs}h</div></div>
+      <div class="flex justify-between text-xs mb-1.5"><span class="font-bold text-blue-600 tip">AI Agent<span class="tt">AI operates 24 hours × 7 days = 168 hours per week. No breaks, no PTO, no shift changes, no overtime cost. A carrier calling at 2am Saturday gets the same experience as 2pm Tuesday.</span></span><span class="text-slate-400 font-medium">${aiHrs} hrs/week · <strong class="text-blue-600">100%</strong> of week</span></div>
+      <div class="w-full bg-slate-100 rounded-lg h-7"><div class="cov-bar" style="width:100%;background:linear-gradient(135deg,#3b82f6,#2563eb)">${aiHrs}h</div></div>
     </div>
-    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mt-1 text-center">
-      <p class="text-2xl font-extrabold text-blue-600">${mult}x</p>
-      <p class="text-xs text-blue-500 font-medium mt-1">more coverage · no overtime · no sick days</p>
+
+    <div class="mt-3 pt-3 border-t border-slate-100">
+      <p class="text-[9px] text-slate-400 uppercase tracking-wider font-bold mb-2">Human coverage gaps (weekly)</p>
+      <div class="grid grid-cols-7 gap-1.5">${heatmap}</div>
+      <div class="flex items-center gap-4 mt-2">
+        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-slate-300"></span><span class="text-[9px] text-slate-400">Covered</span></div>
+        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-100"></span><span class="text-[9px] text-slate-400">No coverage</span></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2 mt-3">
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-center tip">
+        <span class="tt">168 hours (AI) ÷ 45 hours (human) = ${mult}x more availability for inbound carrier calls.</span>
+        <p class="text-xl font-extrabold text-blue-600">${mult}x</p>
+        <p class="text-[9px] text-blue-400 font-medium mt-0.5">more coverage</p>
+      </div>
+      <div class="bg-red-50 border border-red-100 rounded-xl p-3 text-center tip">
+        <span class="tt">${missedPct}% of the week (${aiHrs-humanHrs} hours) has zero human coverage. That's every night after 5pm plus all weekend — ${weekendHrs} weekend hours and ${nightHrs} weeknight off-hours.</span>
+        <p class="text-xl font-extrabold text-red-500">${missedPct}%</p>
+        <p class="text-[9px] text-red-400 font-medium mt-0.5">uncovered by humans</p>
+      </div>
+      <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center tip">
+        <span class="tt">AI answers instantly — no hold queues, no voicemail, no "call back during business hours." Every carrier gets served on the first ring, 24/7.</span>
+        <p class="text-xl font-extrabold text-emerald-600">0 sec</p>
+        <p class="text-[9px] text-emerald-500 font-medium mt-0.5">wait time</p>
+      </div>
     </div>`;
 
   // === SCALE PROJECTOR ===
@@ -324,7 +365,7 @@ function R(d){
   $('scale').innerHTML=`
     <div class="grid grid-cols-3 gap-3">
       ${tierData.map(t=>`
-        <div class="${t.bg} border ${t.border} rounded-xl p-4 relative overflow-hidden">
+        <div class="${t.bg} border ${t.border} rounded-xl p-4 relative">
           <p class="text-[9px] uppercase tracking-wider font-bold ${t.accent} mb-3">${t.label}</p>
           <p class="text-[10px] text-slate-400 font-medium tip">${t.calls} calls/day<span class="tt">${t.calls} calls/day × 30 days = ${t.mo.toLocaleString()} calls/month.</span></p>
           <div class="mt-3 space-y-2">
