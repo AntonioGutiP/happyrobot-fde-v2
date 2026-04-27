@@ -495,6 +495,9 @@ async def dashboard_data(
             "agreed_price": c.agreed_price,
             "num_rounds": c.num_rounds,
             "load_id": c.load_id,
+            "extracted_data": c.extracted_data,
+            "counter_offers": c.counter_offers,
+            "call_duration": c.call_duration,
             "created_at": c.created_at.isoformat() if c.created_at else None,
         }
         for c in recent_q.scalars().all()
