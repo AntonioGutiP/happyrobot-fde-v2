@@ -3,814 +3,250 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carrier Sales Dashboard — Acme Logistics</title>
+<title>Carrier Sales Intelligence — Acme Logistics</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: { sans: ['DM Sans', 'sans-serif'] },
-      colors: {
-        dark: { 50:'#f8fafc',100:'#e2e8f0',200:'#cbd5e1',300:'#94a3b8',400:'#64748b',500:'#475569',600:'#334155',700:'#1e293b',800:'#0f172a',900:'#020617' },
-        accent: { DEFAULT:'#6366f1',light:'#818cf8',dark:'#4f46e5' },
-        success: '#22c55e', warning: '#f59e0b', danger: '#ef4444',
-      }
-    }
-  }
-}
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-body { background: #0a0e1a; color: #e2e8f0; }
-.card { background: linear-gradient(145deg, #111827, #0f172a); border: 1px solid #1e293b; border-radius: 12px; }
-.kpi-card { background: linear-gradient(145deg, #111827, #131b2e); border: 1px solid #1e293b; border-radius: 12px; position: relative; }
-.kpi-card .kpi-glow { position: absolute; top: 0; right: 0; width: 80px; height: 80px; border-radius: 0 0 0 80px; opacity: 0.07; pointer-events: none; }
-.kpi-card:nth-child(1) .kpi-glow { background: #6366f1; }
-.kpi-card:nth-child(2) .kpi-glow { background: #22c55e; }
-.kpi-card:nth-child(3) .kpi-glow { background: #f59e0b; }
-.kpi-card:nth-child(4) .kpi-glow { background: #6366f1; }
-.kpi-card:nth-child(5) .kpi-glow { background: #22c55e; }
-.insight-box { background: #1a1f35; border-left: 3px solid #6366f1; border-radius: 0 8px 8px 0; }
-.action-tag { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
-.status-booked { color: #22c55e; }
-.status-rejected { color: #ef4444; }
-.status-carrier_declined { color: #f59e0b; }
-.status-no_match { color: #94a3b8; }
-.status-needs_follow_up { color: #6366f1; }
-.sentiment-positive { background: #22c55e; }
-.sentiment-neutral { background: #6366f1; }
-.sentiment-negative { background: #f59e0b; }
-.sentiment-hostile { background: #ef4444; }
-table th { text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: #64748b; font-weight: 600; }
-table td { font-size: 0.85rem; }
-
-/* Tooltip */
-.tip { position: relative; cursor: help; border-bottom: 1px dotted #64748b; }
-.tip .tip-text { visibility: hidden; opacity: 0; background: #1e293b; color: #e2e8f0; border: 1px solid #334155;
-  border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; line-height: 1.5; width: 280px;
-  position: absolute; z-index: 999; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-  transition: opacity 0.2s; box-shadow: 0 8px 24px rgba(0,0,0,0.4); pointer-events: none; }
-.tip .tip-text::after { content:''; position:absolute; top:100%; left:50%; margin-left:-5px;
-  border-width:5px; border-style:solid; border-color:#1e293b transparent transparent transparent; }
-.tip:hover .tip-text { visibility: visible; opacity: 1; }
-
-/* Funnel */
-.funnel-stage { position: relative; transition: all 0.3s; }
-.funnel-stage:hover { transform: translateY(-2px); }
-.funnel-bar-bg { background: #1a1f35; border-radius: 8px; height: 44px; width: 100%; }
-.funnel-bar-fill { border-radius: 8px; height: 44px; display: flex; align-items: center; padding: 0 16px;
-  font-weight: 600; font-size: 0.9rem; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
-.funnel-connector { width: 2px; height: 20px; background: #334155; margin: 0 auto; }
-.funnel-drop { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
-
-/* Impact section */
-.impact-hero { background: linear-gradient(135deg, #0f172a 0%, #1a1040 50%, #0f172a 100%);
-  border: 1px solid #2e1065; border-radius: 16px; position: relative; }
-.impact-hero::before { content: ''; position: absolute; top: -50%; right: -20%; width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%); pointer-events: none; z-index: 0; }
-.impact-metric { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px; padding: 24px; text-align: center; position: relative; }
-.impact-metric:hover { border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.05); }
-.impact-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.7rem;
-  font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+:root{--bg:#060a13;--s1:#0c1220;--s2:#111827;--b1:#1c2537;--b2:#2a3a52;--t1:#e2e8f0;--t2:#8b9ab5;--t3:#4a5a73;--ac:#3b82f6;--ac2:#60a5fa;--g:#22c55e;--a:#f59e0b;--r:#ef4444;--p:#8b5cf6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t1);font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:16px;transition:border-color .2s}
+.card:hover{border-color:var(--b2)}
+.kpi{background:var(--s1);border:1px solid var(--b1);border-radius:14px;transition:all .3s}
+.kpi:hover{border-color:var(--ac);transform:translateY(-2px);box-shadow:0 8px 32px rgba(59,130,246,.06)}
+.insight{background:var(--s2);border-left:3px solid var(--ac);border-radius:0 12px 12px 0;padding:14px 20px;margin-top:16px}
+.insight p{font-size:.82rem;color:var(--t2);line-height:1.6}
+.insight strong{color:#fff}
+.tag{padding:3px 10px;border-radius:6px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
+.tg{background:rgba(34,197,94,.1);color:var(--g)}.ta{background:rgba(245,158,11,.1);color:var(--a)}.tr{background:rgba(239,68,68,.1);color:var(--r)}.tp{background:rgba(139,92,246,.1);color:var(--p)}.tb{background:rgba(59,130,246,.1);color:var(--ac2)}
+.sec{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);font-weight:700;margin-bottom:16px}
+.sec span{color:var(--ac2)}
+table{border-collapse:separate;border-spacing:0;width:100%}
+th{text-transform:uppercase;font-size:.65rem;letter-spacing:.06em;color:var(--t3);font-weight:700;padding:10px 14px;text-align:left;border-bottom:1px solid var(--b1)}
+td{font-size:.8rem;padding:11px 14px;border-bottom:1px solid rgba(28,37,55,.4)}
+tr:hover td{background:rgba(59,130,246,.02)}
+.rec{background:var(--s2);border:1px solid var(--b1);border-radius:12px;padding:16px 20px;transition:all .2s}
+.rec:hover{border-color:var(--ac);background:rgba(59,130,246,.02)}
+.fb{height:38px;border-radius:8px;display:flex;align-items:center;padding:0 14px;font-weight:700;font-size:.82rem;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.mono{font-family:'JetBrains Mono',monospace}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+#content>section{animation:fadeIn .4s ease both}
+#content>section:nth-child(2){animation-delay:.05s}
+#content>section:nth-child(3){animation-delay:.1s}
+#content>section:nth-child(4){animation-delay:.15s}
+#content>section:nth-child(5){animation-delay:.2s}
+#content>section:nth-child(6){animation-delay:.25s}
+#content>section:nth-child(7){animation-delay:.3s}
+#content>section:nth-child(8){animation-delay:.35s}
 </style>
 </head>
-<body class="font-sans min-h-screen">
+<body class="min-h-screen">
 
-<!-- Header -->
-<header class="border-b border-dark-700 px-6 py-4">
-  <div class="max-w-7xl mx-auto flex items-center justify-between">
-    <div>
-      <h1 class="text-xl font-bold tracking-tight">Carrier Sales Intelligence</h1>
-      <p class="text-dark-400 text-sm mt-0.5">Acme Logistics — AI-Powered Inbound Operations</p>
-    </div>
-    <div class="flex items-center gap-4">
-      <select id="periodSelect" class="bg-dark-800 border border-dark-600 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accent" onchange="loadData()">
-        <option value="7">Last 7 days</option>
-        <option value="30" selected>Last 30 days</option>
-        <option value="90">Last 90 days</option>
-      </select>
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-        <span class="text-xs text-dark-400">Live</span>
-      </div>
-    </div>
+<header class="border-b border-[#1c2537] px-6 py-5">
+<div class="max-w-[1280px] mx-auto flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-extrabold shadow-lg shadow-blue-500/20">A</div>
+    <div><h1 class="text-[17px] font-extrabold tracking-tight">Carrier Sales Intelligence</h1><p class="text-[11px] text-[#4a5a73] mt-0.5">Acme Logistics · AI Agent Performance Dashboard</p></div>
   </div>
+  <div class="flex items-center gap-5">
+    <select id="ps" class="bg-[#0c1220] border border-[#1c2537] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500 text-[#8b9ab5]" onchange="L()"><option value="7">7d</option><option value="30" selected>30d</option><option value="90">90d</option></select>
+    <button onclick="L()" class="text-xs text-[#4a5a73] hover:text-blue-400">↻</button>
+    <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span><span class="text-[9px] text-[#4a5a73] uppercase tracking-widest">Live</span></div>
+  </div>
+</div>
 </header>
 
-<main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+<main class="max-w-[1280px] mx-auto px-6 py-8">
+<div id="ld" class="text-center py-24"><p class="text-[#4a5a73] text-sm animate-pulse">Loading dashboard...</p></div>
+<div id="content" class="space-y-8" style="display:none">
 
-  <!-- KPI Cards -->
-  <section id="kpis" class="grid grid-cols-2 md:grid-cols-5 gap-4">
-    <div class="kpi-card p-4">
-      <div class="kpi-glow"></div>
-      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider tip">Total Calls
-        <span class="tip-text">All inbound carrier calls handled by the AI agent in the selected period. Includes every outcome: booked, rejected, declined, no match, and follow-ups.</span>
-      </p>
-      <p class="text-2xl font-bold mt-1" id="kpi-calls">—</p>
-      <p class="text-xs text-dark-400 mt-1" id="kpi-calls-sub"></p>
-    </div>
-    <div class="kpi-card p-4">
-      <div class="kpi-glow"></div>
-      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider tip">Conversion Rate
-        <span class="tip-text"><strong>Formula:</strong> Booked Calls ÷ Total Calls × 100<br><br>Measures how effectively the AI converts inbound carrier inquiries into confirmed load bookings.</span>
-      </p>
-      <p class="text-2xl font-bold mt-1 text-success" id="kpi-conversion">—</p>
-      <p class="text-xs text-dark-400 mt-1" id="kpi-conversion-sub"></p>
-    </div>
-    <div class="kpi-card p-4">
-      <div class="kpi-glow"></div>
-      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider tip">Booked Revenue
-        <span class="tip-text"><strong>Formula:</strong> Sum of all agreed_price values from booked calls.<br><br>Total carrier-side revenue generated through AI-negotiated deals.</span>
-      </p>
-      <p class="text-2xl font-bold mt-1" id="kpi-revenue">—</p>
-      <p class="text-xs text-dark-400 mt-1" id="kpi-revenue-sub"></p>
-    </div>
-    <div class="kpi-card p-4">
-      <div class="kpi-glow"></div>
-      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider tip">Rate Integrity
-        <span class="tip-text"><strong>Formula:</strong> % of booked deals where agreed price ≤ loadboard rate<br><br>Measures whether the AI holds the listed rate under carrier pressure. 100% = AI never overpaid. Human reps typically cave on 15-30% of calls when carriers push for more.</span>
-      </p>
-      <p class="text-2xl font-bold mt-1 text-accent-light" id="kpi-margin">—</p>
-      <p class="text-xs text-dark-400 mt-1">held at listed rate</p>
-    </div>
-    <div class="kpi-card p-4">
-      <div class="kpi-glow"></div>
-      <p class="text-dark-400 text-xs font-medium uppercase tracking-wider tip">Cost Savings
-        <span class="tip-text"><strong>Formula:</strong> (Total Calls × $18 human cost) − (Total Calls × $1.50 AI cost)<br><br>Based on industry average of $15–25 per call for human reps (midpoint $18) vs estimated $1.50 per AI-handled call.</span>
-      </p>
-      <p class="text-2xl font-bold mt-1 text-success" id="kpi-savings">—</p>
-      <p class="text-xs text-dark-400 mt-1" id="kpi-savings-sub"></p>
-    </div>
-  </section>
+<!-- S1: COMMAND CENTER -->
+<section>
+<p class="sec">01 — <span>Command Center</span></p>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="k1"></div>
+<div class="insight" id="i1"></div>
+</section>
 
-  <!-- Row 2: Funnel + Outcome -->
-  <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <!-- Conversion Funnel -->
-    <div class="card p-5 lg:col-span-2">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-2">Conversion Funnel</h2>
-      <p class="text-xs text-dark-500 mb-4">Each stage shows how many calls progressed. Red indicators show where deals are lost.</p>
-      <div id="funnel" class="space-y-1"></div>
-      <div id="funnel-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
-    </div>
+<!-- S2: CONVERSION FUNNEL -->
+<section>
+<p class="sec">02 — <span>Conversion Funnel</span></p>
+<div class="card p-6"><div id="fn" class="space-y-3"></div><div class="insight" id="i2"></div></div>
+</section>
 
-    <!-- Outcome Distribution -->
-    <div class="card p-5">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Call Outcomes</h2>
-      <canvas id="outcomeChart" height="220"></canvas>
-    </div>
-  </section>
+<!-- S3: REVENUE & DEALS -->
+<section>
+<p class="sec">03 — <span>Revenue &amp; Deal Economics</span></p>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="card p-6 lg:col-span-2"><p class="text-[10px] text-[#4a5a73] uppercase tracking-wider mb-4 font-bold">Recent Deals</p><div class="overflow-x-auto"><table id="dt"><thead><tr><th>Lane</th><th>Listed</th><th>Agreed</th><th>Δ</th><th>Rnds</th></tr></thead><tbody></tbody></table></div></div>
+  <div class="space-y-4"><div class="card p-5" id="rv"></div><div class="card p-5" id="pl"></div></div>
+</div>
+<div class="insight" id="i3"></div>
+</section>
 
-  <!-- Row 3: Revenue + Sentiment -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <!-- Revenue Breakdown -->
-    <div class="card p-5">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Revenue & Deal Analysis</h2>
-      <div id="deals-table" class="overflow-x-auto"></div>
-      <div id="revenue-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
-    </div>
+<!-- S4: LANE INTELLIGENCE -->
+<section>
+<p class="sec">04 — <span>Lane Intelligence</span></p>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="card p-6"><p class="text-[10px] text-[#4a5a73] uppercase tracking-wider mb-4 font-bold">🔥 Hot Lanes</p><table id="hl"><thead><tr><th>Lane</th><th>Calls</th><th>Booked</th><th>Conv</th></tr></thead><tbody></tbody></table></div>
+  <div class="card p-6"><p class="text-[10px] text-[#4a5a73] uppercase tracking-wider mb-4 font-bold">📦 Unmet Demand</p><div id="ud"></div></div>
+</div>
+<div class="insight" id="i4"></div>
+</section>
 
-    <!-- Carrier Sentiment -->
-    <div class="card p-5">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Carrier Experience</h2>
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <p class="text-dark-400 text-xs uppercase tip">Satisfaction Rate
-            <span class="tip-text"><strong>Formula:</strong> (Positive + Neutral calls) ÷ Total Calls × 100<br><br>Carriers with positive or neutral sentiment are counted as satisfied. Negative and hostile reduce this score.</span>
-          </p>
-          <p class="text-xl font-bold" id="satisfaction-rate">—</p>
-        </div>
-        <div>
-          <p class="text-dark-400 text-xs uppercase tip">Repeat Callers
-            <span class="tip-text"><strong>Formula:</strong> Carriers who called more than once ÷ Total unique carriers × 100<br><br>High repeat rate means carriers trust the system and come back for more loads.</span>
-          </p>
-          <p class="text-xl font-bold" id="repeat-rate">—</p>
-        </div>
-        <div>
-          <p class="text-dark-400 text-xs uppercase tip">Avg Negotiation Rounds
-            <span class="tip-text">Average number of back-and-forth rounds in calls that involved negotiation (excludes calls with 0 rounds). Lower = carriers accept offers quickly. Max is 3 rounds per call.</span>
-          </p>
-          <p class="text-xl font-bold" id="avg-rounds">—</p>
-        </div>
-        <div>
-          <p class="text-dark-400 text-xs uppercase">Unique Carriers</p>
-          <p class="text-xl font-bold" id="unique-carriers">—</p>
-        </div>
-      </div>
-      <canvas id="sentimentChart" height="160"></canvas>
-    </div>
-  </section>
+<!-- S5: NEGOTIATION -->
+<section>
+<p class="sec">05 — <span>Negotiation Performance</span></p>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="nk"></div>
+<div class="insight" id="i5"></div>
+</section>
 
-  <!-- Row 4: Lane Intelligence -->
-  <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <div class="card p-5 lg:col-span-2">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-1">Lane Intelligence</h2>
-      <p class="text-xs text-dark-500 mb-4">Which routes are converting? Where should you source more inventory?</p>
-      <div id="lanes-table" class="overflow-x-auto"></div>
-    </div>
+<!-- S6: CARRIER EXPERIENCE -->
+<section>
+<p class="sec">06 — <span>Carrier Experience</span></p>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="card p-6 flex flex-col items-center justify-center relative" style="min-height:220px"><canvas id="sc" width="170" height="170"></canvas><div class="donut-center"><p class="text-2xl font-extrabold" id="sp">—</p><p class="text-[9px] text-[#4a5a73] uppercase tracking-widest">Satisfaction</p></div></div>
+  <div class="card p-6 lg:col-span-2"><div class="grid grid-cols-2 gap-6" id="xm"></div></div>
+</div>
+<div class="insight" id="i6"></div>
+</section>
 
-    <div class="card p-5">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-1">Unmet Demand</h2>
-      <p class="text-xs text-dark-500 mb-3">Lanes carriers want that we don't have</p>
-      <div id="unmet-demand" class="space-y-2"></div>
-      <div id="unmet-empty" class="text-dark-500 text-sm text-center py-6 hidden">No unmet demand recorded yet</div>
-    </div>
-  </section>
+<!-- S7: RECOMMENDATIONS -->
+<section>
+<p class="sec">07 — <span>Recommended Actions</span></p>
+<div id="rc" class="space-y-3"></div>
+</section>
 
-  <!-- Row 5: Rejection Analysis -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <div class="card p-5">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Rejection Analysis</h2>
-      <canvas id="rejectionChart" height="200"></canvas>
-      <div id="rejection-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
-    </div>
+<!-- ACTIVITY LOG -->
+<section>
+<p class="sec">Activity Log</p>
+<div class="card p-6"><table id="al"><thead><tr><th>Time</th><th>Carrier</th><th>Lane</th><th>Outcome</th><th>Sentiment</th><th>Rate</th></tr></thead><tbody></tbody></table></div>
+</section>
 
-    <div class="card p-5">
-      <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-1">Negotiation Gap Analysis</h2>
-      <p class="text-xs text-dark-500 mb-3 tip">How close were failed deals to closing?
-        <span class="tip-text">Shows the ceiling price (max the broker will stretch) and how many rounds were attempted. If carriers are consistently close to the ceiling, increasing it by 2-3% on high-demand lanes could close more deals.</span>
-      </p>
-      <div id="gap-table" class="overflow-x-auto"></div>
-      <div id="gap-insight" class="insight-box p-3 mt-4 text-sm hidden"></div>
-    </div>
-  </section>
-
-  <!-- Row 6: Booking Confirmations -->
-  <section class="card p-5 border-success/20">
-    <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Booking Confirmations</h2>
-    <p class="text-xs text-dark-500 mb-3">Auto-generated on every booking — would trigger email to dispatch, TMS entry, and carrier confirmation in production.</p>
-    <div id="bookings-table" class="overflow-x-auto"></div>
-  </section>
-
-  <!-- Row 7: Recent Activity -->
-  <section class="card p-5">
-    <h2 class="text-sm font-semibold uppercase tracking-wider text-dark-300 mb-4">Recent Activity</h2>
-    <div id="recent-calls" class="overflow-x-auto"></div>
-  </section>
-
-  <!-- Agent P&L -->
-  <section class="impact-hero p-6">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h2 class="text-lg font-bold">Agent P&L</h2>
-        <p class="text-dark-400 text-xs">Financial performance of the AI carrier sales agent</p>
-      </div>
-      <div id="pl-hero" class="text-right"></div>
-    </div>
-
-    <!-- P&L Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <div id="pl-revenue" class="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5"></div>
-      <div id="pl-cost" class="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5"></div>
-    </div>
-
-    <!-- Unit Economics -->
-    <div id="pl-unit" class="bg-white/[0.02] border border-white/[0.06] rounded-xl p-5 mb-6"></div>
-
-    <!-- Projections -->
-    <div id="pl-projections" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>
-
-    <!-- Quality Proof -->
-    <div id="pl-quality" class="flex items-center justify-between gap-4 pt-4 border-t border-white/[0.06]"></div>
-  </section>
-
+</div>
 </main>
 
-<footer class="border-t border-dark-700 px-6 py-4 mt-8">
-  <div class="max-w-7xl mx-auto flex items-center justify-between text-xs text-dark-500">
-    <span>Powered by HappyRobot AI Platform</span>
-    <span id="last-updated"></span>
-  </div>
-</footer>
+<footer class="border-t border-[#1c2537] px-6 py-4 mt-8"><div class="max-w-[1280px] mx-auto flex justify-between"><p class="text-[9px] text-[#4a5a73]">Powered by HappyRobot AI · Acme Logistics Carrier Sales</p><p class="text-[9px] text-[#4a5a73]" id="ga"></p></div></footer>
 
 <script>
-const API_BASE = window.location.origin;
-let charts = {};
+const API=location.origin+'/api/v1',H={'X-API-Key':'hr-prod-2025-secure'};
+const $=id=>document.getElementById(id);
+const M=n=>n!=null?'$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}):'—';
+const P=n=>n!=null?n.toFixed(1)+'%':'—';
+const OC={booked:'#22c55e',rejected:'#ef4444',carrier_declined:'#f59e0b',no_match:'#6b7280',needs_follow_up:'#8b5cf6'};
+const OL={booked:'Booked',rejected:'Rejected',carrier_declined:'Declined',no_match:'No Match',needs_follow_up:'Follow Up'};
+const SC={positive:'#22c55e',neutral:'#3b82f6',negative:'#f59e0b',hostile:'#ef4444'};
+function TA(iso){if(!iso)return'—';const m=Math.floor((Date.now()-new Date(iso))/6e4);return m<1?'Now':m<60?m+'m':m<1440?Math.floor(m/60)+'h':Math.floor(m/1440)+'d'}
 
-function $(id) { return document.getElementById(id); }
-function fmt(n) { return n != null ? n.toLocaleString('en-US') : '—'; }
-function money(n) { return n != null ? '$' + n.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '—'; }
-function pct(n) { return n != null ? n + '%' : '—'; }
-
-async function loadData() {
-  const days = $('periodSelect').value;
-  try {
-    const resp = await fetch(`${API_BASE}/api/v1/dashboard/data?days=${days}`);
-    const data = await resp.json();
-    render(data);
-  } catch (e) {
-    console.error('Failed to load dashboard data:', e);
-  }
+async function L(){
+  try{
+    const r=await fetch(`${API}/dashboard/data?days=${$('ps').value}`,{headers:H});
+    const d=await r.json();R(d);$('ld').style.display='none';$('content').style.display='block';
+  }catch(e){$('ld').innerHTML='<p class="text-red-400 text-sm">Dashboard load failed</p>'}
 }
 
-function render(d) {
-  // KPIs
-  $('kpi-calls').textContent = fmt(d.executive.total_calls);
-  $('kpi-calls-sub').textContent = `${d.funnel.booked} booked`;
-  $('kpi-conversion').textContent = pct(d.executive.conversion_rate);
-  $('kpi-conversion-sub').textContent = `${d.funnel.booked} of ${d.executive.total_calls} calls`;
-  $('kpi-revenue').textContent = money(d.executive.total_revenue);
-  $('kpi-revenue-sub').textContent = `${d.revenue.deals.length} deals closed`;
-  $('kpi-margin').textContent = pct(d.executive.rate_integrity);
-  $('kpi-savings').textContent = money(d.executive.cost_savings);
-  $('kpi-savings-sub').textContent = `${pct(d.executive.roi_pct)} ROI vs human`;
+function R(d){
+  const{executive:ex,funnel:fn,revenue:rv,lanes:ln,rejections:rj,experience:xp,recent_calls:rc,bookings:bk}=d;
+  $('ga').textContent='Updated '+new Date(d.generated_at).toLocaleString();
 
-  renderFunnel(d.funnel);
-  renderOutcomeChart(d.funnel);
-  renderDeals(d.revenue, d.executive);
-  renderExperience(d.experience);
-  renderSentimentChart(d.experience.sentiment);
-  renderLanes(d.lanes);
-  renderUnmetDemand(d.lanes.unmet_demand);
-  renderRejections(d.rejections);
-  renderGaps(d.rejections);
-  renderRecent(d.recent_calls);
-  renderBookings(d.bookings || []);
-  renderImpact(d.executive, d.revenue, d.experience, d.funnel);
-
-  $('last-updated').textContent = `Updated: ${new Date(d.generated_at).toLocaleString()}`;
-}
-
-function renderFunnel(f) {
-  const stages = [
-    { label: 'Incoming Calls', value: f.total_calls, color: '#6366f1', icon: '📞' },
-    { label: 'FMCSA Verified', value: f.fmcsa_verified, color: '#818cf8', icon: '✓' },
-    { label: 'Load Pitched', value: f.loads_pitched, color: '#a78bfa', icon: '📦' },
-    { label: 'Negotiated', value: f.entered_negotiation, color: '#c4b5fd', icon: '🤝' },
-    { label: 'Booked', value: f.booked, color: '#22c55e', icon: '✅' },
+  // S1: KPIs
+  const ad=xp.avg_call_duration_seconds?(xp.avg_call_duration_seconds/60).toFixed(1):'—';
+  const kpis=[
+    {l:'Calls Handled',v:ex.total_calls,s:`${fn.booked||0} booked, ${(rj.breakdown||{}).rejected||0} rejected`,c:'#3b82f6'},
+    {l:'Conversion Rate',v:P(ex.conversion_rate),s:`${fn.booked||0} of ${ex.total_calls} calls`,c:'#22c55e'},
+    {l:'Revenue Booked',v:M(ex.total_revenue),s:`Avg deal ${M(rv.avg_deal_size||0)}`,c:'#f59e0b'},
+    {l:'Avg Call Time',v:ad+' min',s:'vs ~12 min human avg',c:'#8b5cf6'},
   ];
-  const max = Math.max(f.total_calls, 1);
+  $('k1').innerHTML=kpis.map(k=>`<div class="kpi p-5"><p class="text-[10px] uppercase tracking-wider text-[#4a5a73] font-bold">${k.l}</p><p class="text-[26px] font-extrabold mt-2" style="color:${k.c}">${k.v}</p><p class="text-[11px] text-[#4a5a73] mt-1">${k.s}</p></div>`).join('');
+  $('i1').innerHTML=`<p>AI handled <strong>${ex.total_calls} calls</strong> — human team cost: <strong>${M(ex.human_cost_baseline)}</strong>, AI cost: <strong>${M(ex.ai_cost)}</strong>. Net savings: <strong class="text-green-400">${M(ex.cost_savings)}</strong> (${ex.roi_pct}% ROI).</p>`;
 
-  let html = '';
-  stages.forEach((s, i) => {
-    const w = Math.max((s.value / max) * 100, 8);
-    const prevVal = i > 0 ? stages[i-1].value : s.value;
-    const passRate = prevVal > 0 ? Math.round(s.value / prevVal * 100) : 100;
-    const dropped = i > 0 ? prevVal - s.value : 0;
-
-    html += `<div class="funnel-stage">
-      <div class="flex items-center gap-3">
-        <div class="w-8 text-center text-lg">${s.icon}</div>
-        <div class="flex-1">
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-medium text-dark-300">${s.label}</span>
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-bold">${s.value}</span>
-              ${i > 0 ? `<span class="text-xs ${passRate >= 70 ? 'text-success' : passRate >= 40 ? 'text-warning' : 'text-danger'}">${passRate}% pass</span>` : ''}
-            </div>
-          </div>
-          <div class="funnel-bar-bg">
-            <div class="funnel-bar-fill" style="width:${w}%;background:${s.color}"></div>
-          </div>
-        </div>
-        ${dropped > 0 ? `<div class="w-20 text-right"><span class="text-xs text-danger font-medium">−${dropped} lost</span></div>` : '<div class="w-20"></div>'}
-      </div>
-    </div>`;
-
-    if (i < stages.length - 1) {
-      html += `<div class="funnel-connector ml-4"></div>`;
-    }
-  });
-  $('funnel').innerHTML = html;
-
-  // Insight
-  const drops = [
-    { name: 'FMCSA verification', lost: f.drop_offs.verification_fail },
-    { name: 'load matching', lost: f.drop_offs.no_load_match },
-    { name: 'carrier interest', lost: f.drop_offs.declined_after_pitch },
-    { name: 'negotiation', lost: f.drop_offs.negotiation_failed },
-  ].filter(d => d.lost > 0).sort((a,b) => b.lost - a.lost);
-
-  if (drops.length > 0) {
-    $('funnel-insight').classList.remove('hidden');
-    $('funnel-insight').innerHTML = `<span class="text-accent-light font-semibold">🎯 Focus Area:</span> Biggest drop-off is at <strong>${drops[0].name}</strong> (${drops[0].lost} calls lost). ` +
-      (drops[0].name === 'load matching' ? 'Source more inventory for requested lanes.' :
-       drops[0].name === 'negotiation' ? 'Review ceiling pricing — carriers may need slightly higher rates on these lanes.' :
-       drops[0].name === 'carrier interest' ? 'Improve load pitch quality or rate competitiveness.' :
-       'Review carrier eligibility requirements.');
-  }
-}
-
-function renderOutcomeChart(f) {
-  if (charts.outcome) charts.outcome.destroy();
-  const data = [
-    f.booked,
-    f.drop_offs.negotiation_failed || 0,
-    f.drop_offs.declined_after_pitch || 0,
-    f.drop_offs.no_load_match || 0,
-    f.total_calls - f.fmcsa_verified,
-  ];
-  charts.outcome = new Chart($('outcomeChart'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Booked', 'Negotiation Failed', 'Carrier Declined', 'No Match', 'FMCSA Rejected'],
-      datasets: [{ data, backgroundColor: ['#22c55e','#ef4444','#f59e0b','#64748b','#94a3b8'], borderWidth: 0 }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 } } },
-      cutout: '65%',
-    }
-  });
-}
-
-function renderDeals(rev, exec) {
-  if (!rev.deals.length) {
-    $('deals-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No deals closed yet</p>';
-    return;
-  }
-  let html = `<table class="w-full text-left">
-    <thead><tr class="border-b border-dark-700">
-      <th class="py-2 px-2">Lane</th>
-      <th class="py-2 px-2">Listed</th>
-      <th class="py-2 px-2">Booked</th>
-      <th class="py-2 px-2 tip">$/mile<span class="tip-text">Booked rate ÷ miles. Industry standard for benchmarking lane profitability.</span></th>
-      <th class="py-2 px-2 tip">vs Listed<span class="tip-text">How the booked rate compares to listed. "At rate" = AI held firm. Savings = carrier accepted below listed.</span></th>
-      <th class="py-2 px-2">Rnds</th>
-    </tr></thead><tbody>`;
-  rev.deals.forEach(d => {
-    const diff = d.initial_rate - d.agreed_price;
-    const agreedColor = diff >= 0 ? 'text-success' : 'text-warning';
-    const vsListed = diff === 0 ? '<span class="text-success">At rate</span>' :
-                     diff > 0 ? `<span class="text-success">-${money(diff)}</span>` :
-                     `<span class="text-warning">+${money(Math.abs(diff))}</span>`;
-    html += `<tr class="border-b border-dark-800">
-      <td class="py-2 px-2 text-sm">${d.lane || d.load_id || '—'}</td>
-      <td class="py-2 px-2">${money(d.initial_rate)}</td>
-      <td class="py-2 px-2 ${agreedColor}">${money(d.agreed_price)}</td>
-      <td class="py-2 px-2 font-semibold">${d.booked_rpm ? '$' + d.booked_rpm : '—'}</td>
-      <td class="py-2 px-2">${vsListed}</td>
-      <td class="py-2 px-2 text-center">${d.rounds}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  $('deals-table').innerHTML = html;
-
-  if (rev.deals.length > 0) {
-    $('revenue-insight').classList.remove('hidden');
-    const integrity = exec.rate_integrity;
-    const concession = rev.avg_concession_pct;
-    if (concession < 1) {
-      $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> AI held firm on <strong>${integrity}%</strong> of deals — carriers paid the listed rate. No rate erosion from carrier pressure. Human reps typically cave on 15-30% of negotiations.`;
-    } else {
-      $('revenue-insight').innerHTML = `<span class="text-accent-light font-semibold">📊 Insight:</span> Average concession: <strong>${concession}%</strong> from listed rate. Rate integrity at <strong>${integrity}%</strong>. Human reps typically concede 10-15% — AI is ${concession < 5 ? 'significantly more disciplined' : 'within acceptable range'}.`;
-    }
-  }
-}
-
-function renderExperience(exp) {
-  $('satisfaction-rate').textContent = pct(exp.satisfaction_rate);
-  $('repeat-rate').textContent = `${exp.repeat_carriers} (${pct(exp.repeat_rate)})`;
-  $('avg-rounds').textContent = exp.avg_negotiation_rounds;
-  $('unique-carriers').textContent = fmt(exp.unique_carriers);
-}
-
-function renderSentimentChart(sentiment) {
-  if (charts.sentiment) charts.sentiment.destroy();
-  const labels = Object.keys(sentiment).map(s => s.charAt(0).toUpperCase() + s.slice(1));
-  const values = Object.values(sentiment);
-  const colors = { positive: '#22c55e', neutral: '#6366f1', negative: '#f59e0b', hostile: '#ef4444' };
-
-  charts.sentiment = new Chart($('sentimentChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ data: values, backgroundColor: Object.keys(sentiment).map(s => colors[s] || '#64748b'), borderRadius: 6, borderSkipped: false }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
-        y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', stepSize: 1 } },
-      }
-    }
-  });
-}
-
-function renderLanes(lanes) {
-  if (!lanes.top_lanes.length) {
-    $('lanes-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No lane data yet</p>';
-    return;
-  }
-  let html = `<table class="w-full text-left">
-    <thead><tr class="border-b border-dark-700">
-      <th class="py-2 px-2">Lane</th><th class="py-2 px-2">Miles</th><th class="py-2 px-2">Calls</th>
-      <th class="py-2 px-2">Booked</th><th class="py-2 px-2">Conv%</th>
-      <th class="py-2 px-2 tip">Listed $/mi<span class="tip-text">Average loadboard rate per mile for this lane</span></th>
-      <th class="py-2 px-2 tip">Booked $/mi<span class="tip-text">Average booked (negotiated) rate per mile. Compare to listed to see negotiation impact.</span></th>
-      <th class="py-2 px-2">Action</th>
-    </tr></thead><tbody>`;
-  lanes.top_lanes.forEach(l => {
-    const convColor = l.conversion_pct >= 70 ? 'text-success' : l.conversion_pct >= 40 ? 'text-warning' : 'text-danger';
-    const rpmDiff = l.booked_rpm && l.listed_rpm ? l.listed_rpm - l.booked_rpm : null;
-    const rpmColor = rpmDiff !== null ? (rpmDiff < 0.20 ? 'text-success' : rpmDiff < 0.50 ? 'text-warning' : 'text-danger') : '';
-    html += `<tr class="border-b border-dark-800">
-      <td class="py-2 px-2 text-sm">${l.origin} → ${l.destination}</td>
-      <td class="py-2 px-2 text-xs text-dark-400">${l.avg_miles ? Math.round(l.avg_miles) : '—'}</td>
-      <td class="py-2 px-2 text-center">${l.total_calls}</td>
-      <td class="py-2 px-2 text-center">${l.booked}</td>
-      <td class="py-2 px-2 ${convColor} font-semibold">${l.conversion_pct}%</td>
-      <td class="py-2 px-2">$${l.listed_rpm || '—'}</td>
-      <td class="py-2 px-2 ${rpmColor} font-semibold">${l.booked_rpm ? '$' + l.booked_rpm : '—'}</td>
-      <td class="py-2 px-2"><span class="action-tag text-xs px-2 py-0.5 rounded-full">${l.action.split('—')[0].trim()}</span></td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  $('lanes-table').innerHTML = html;
-}
-
-function renderUnmetDemand(unmet) {
-  if (!unmet || !unmet.length) { $('unmet-empty').classList.remove('hidden'); return; }
-  $('unmet-empty').classList.add('hidden');
-  let html = '';
-  unmet.forEach(u => {
-    html += `<div class="bg-dark-800 rounded-lg p-3">
-      <p class="text-sm font-medium">${u.origin} → ${u.destination}</p>
-      <p class="text-xs text-dark-400">${u.equipment_type || 'Any'} · ${u.carrier_requests} carrier${u.carrier_requests > 1 ? 's' : ''}</p>
-      <p class="text-xs text-accent-light mt-1">→ ${u.action}</p>
-    </div>`;
-  });
-  $('unmet-demand').innerHTML = html;
-}
-
-function renderRejections(rej) {
-  if (charts.rejection) charts.rejection.destroy();
-  const labels = { rejected: 'Negotiation Failed', carrier_declined: 'Carrier Declined', no_match: 'No Matching Load' };
-  const colors = { rejected: '#ef4444', carrier_declined: '#f59e0b', no_match: '#64748b' };
-  const keys = Object.keys(rej.breakdown);
-  if (!keys.length) return;
-
-  charts.rejection = new Chart($('rejectionChart'), {
-    type: 'bar',
-    data: {
-      labels: keys.map(k => labels[k] || k),
-      datasets: [{ data: keys.map(k => rej.breakdown[k]), backgroundColor: keys.map(k => colors[k] || '#64748b'), borderRadius: 6, borderSkipped: false }]
-    },
-    options: {
-      indexAxis: 'y', responsive: true, plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', stepSize: 1 } },
-        y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 12 } } },
-      }
-    }
-  });
-  if (rej.insight) {
-    $('rejection-insight').classList.remove('hidden');
-    $('rejection-insight').innerHTML = `<span class="text-accent-light font-semibold">💡 Recommendation:</span> ${rej.insight}`;
-  }
-}
-
-function renderGaps(rej) {
-  if (!rej.negotiation_gaps.length) {
-    $('gap-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No failed negotiations to analyze</p>';
-    return;
-  }
-  let html = `<table class="w-full text-left">
-    <thead><tr class="border-b border-dark-700">
-      <th class="py-2 px-2">Load</th><th class="py-2 px-2">Listed</th><th class="py-2 px-2">Ceiling</th>
-      <th class="py-2 px-2">Rounds</th><th class="py-2 px-2">Max Stretch</th>
-    </tr></thead><tbody>`;
-  rej.negotiation_gaps.forEach(g => {
-    html += `<tr class="border-b border-dark-800">
-      <td class="py-2 px-2 font-mono text-xs">${g.load_id || '—'}</td>
-      <td class="py-2 px-2">${money(g.initial_rate)}</td>
-      <td class="py-2 px-2">${money(g.ceiling_price)}</td>
-      <td class="py-2 px-2 text-center">${g.rounds}</td>
-      <td class="py-2 px-2">${g.max_concession_pct}%</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  $('gap-table').innerHTML = html;
-
-  if (rej.avg_negotiation_gap_pct > 0) {
-    $('gap-insight').classList.remove('hidden');
-    $('gap-insight').innerHTML = `<span class="text-accent-light font-semibold">📐 Insight:</span> Average ceiling stretch is <strong>${rej.avg_negotiation_gap_pct}%</strong>. ` +
-      (rej.avg_negotiation_gap_pct < 5 ? 'Ceiling is tight — increasing by 2-3% on high-demand lanes could close more deals.' : 'Reasonable stretch range. Current ceiling levels are working.');
-  }
-}
-
-function renderRecent(calls) {
-  if (!calls.length) { $('recent-calls').innerHTML = '<p class="text-dark-500 text-sm text-center py-6">No recent calls</p>'; return; }
-  let html = `<table class="w-full text-left">
-    <thead><tr class="border-b border-dark-700">
-      <th class="py-2 px-2">Time</th><th class="py-2 px-2">Carrier</th><th class="py-2 px-2">MC#</th>
-      <th class="py-2 px-2">Load</th><th class="py-2 px-2">Outcome</th><th class="py-2 px-2">Rate</th>
-      <th class="py-2 px-2">Agreed</th><th class="py-2 px-2">Rounds</th><th class="py-2 px-2">Sentiment</th>
-    </tr></thead><tbody>`;
-  const outcomeLabel = { booked:'Booked', rejected:'Rejected', carrier_declined:'Declined', no_match:'No Match', needs_follow_up:'Follow-up' };
-  calls.forEach(c => {
-    const time = c.created_at ? new Date(c.created_at).toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-    html += `<tr class="border-b border-dark-800 hover:bg-dark-800/50">
-      <td class="py-2 px-2 text-xs text-dark-400">${time}</td>
-      <td class="py-2 px-2 text-sm">${c.carrier_name || '—'}</td>
-      <td class="py-2 px-2 font-mono text-xs">${c.carrier_mc || '—'}</td>
-      <td class="py-2 px-2 font-mono text-xs">${c.load_id || '—'}</td>
-      <td class="py-2 px-2 status-${c.outcome} font-semibold text-sm">${outcomeLabel[c.outcome] || c.outcome}</td>
-      <td class="py-2 px-2">${money(c.initial_rate)}</td>
-      <td class="py-2 px-2 ${c.agreed_price ? 'text-success' : 'text-dark-500'}">${money(c.agreed_price)}</td>
-      <td class="py-2 px-2 text-center">${c.num_rounds}</td>
-      <td class="py-2 px-2"><span class="inline-block w-2 h-2 rounded-full sentiment-${c.sentiment}"></span> <span class="text-xs">${c.sentiment}</span></td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  $('recent-calls').innerHTML = html;
-}
-
-function renderBookings(bookings) {
-  if (!bookings.length) {
-    $('bookings-table').innerHTML = '<p class="text-dark-500 text-sm text-center py-4">No bookings yet — complete a test call to generate one</p>';
-    return;
-  }
-  let html = `<table class="w-full text-left">
-    <thead><tr class="border-b border-dark-700">
-      <th class="py-2 px-2">Confirmation</th><th class="py-2 px-2">Carrier</th>
-      <th class="py-2 px-2">Lane</th><th class="py-2 px-2">Agreed</th>
-      <th class="py-2 px-2">$/mile</th><th class="py-2 px-2">vs Listed</th>
-      <th class="py-2 px-2">Rounds</th><th class="py-2 px-2">Booked</th>
-    </tr></thead><tbody>`;
-  bookings.forEach(b => {
-    const diff = b.cost_vs_listed || 0;
-    const vsColor = diff === 0 ? 'text-success' : diff > 0 ? 'text-warning' : 'text-success';
-    const vsText = diff === 0 ? 'At rate' : diff > 0 ? `+${money(diff)}` : money(diff);
-    const time = b.booked_at ? new Date(b.booked_at).toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-    html += `<tr class="border-b border-dark-800">
-      <td class="py-2 px-2 font-mono text-xs text-accent-light">${b.confirmation_number}</td>
-      <td class="py-2 px-2 text-sm">${b.carrier_name || b.carrier_mc || '—'}</td>
-      <td class="py-2 px-2 text-sm">${b.lane || '—'}</td>
-      <td class="py-2 px-2 font-semibold">${money(b.agreed_rate)}</td>
-      <td class="py-2 px-2">${b.rate_per_mile ? '$' + b.rate_per_mile : '—'}</td>
-      <td class="py-2 px-2 ${vsColor}">${vsText}</td>
-      <td class="py-2 px-2 text-center">${b.rounds}</td>
-      <td class="py-2 px-2 text-xs text-dark-400">${time}</td>
-    </tr>`;
-  });
-  html += '</tbody></table>';
-  $('bookings-table').innerHTML = html;
-}
-
-function renderImpact(exec, rev, exp, funnel) {
-  const calls = exec.total_calls;
-  const period = parseInt($('periodSelect').value);
-  const callsPerDay = calls / Math.max(period, 1);
-  const avgDeal = rev.avg_deal_size || 0;
-  const convRate = exec.conversion_rate / 100;
-
-  // Core financial metrics
-  const totalValue = exec.total_revenue + exec.cost_savings;
-  const revenuePerCall = calls > 0 ? exec.total_revenue / calls : 0;
-  const costPerAcquisition = funnel.booked > 0 ? exec.ai_cost / funnel.booked : 0;
-  const humanCostPerAcquisition = funnel.booked > 0 ? exec.human_cost_baseline / funnel.booked : 0;
-
-  // Hero
-  $('pl-hero').innerHTML = `
-    <p class="text-xs text-dark-400 uppercase tracking-wider tip">Total Value Created
-      <span class="tip-text">Booked revenue + operational cost savings vs human reps. This is the total financial impact of the AI agent in the selected period.</span>
-    </p>
-    <p class="text-3xl font-bold text-success">${money(totalValue)}</p>
-  `;
-
-  // Revenue side
-  $('pl-revenue').innerHTML = `
-    <p class="text-xs text-dark-500 uppercase tracking-wider mb-4">Revenue</p>
-    <div class="space-y-3">
-      <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-300">Booked revenue</span>
-        <span class="text-lg font-bold">${money(exec.total_revenue)}</span>
-      </div>
-      <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-400 tip">Avg deal size<span class="tip-text">Total booked revenue ÷ number of booked calls</span></span>
-        <span class="text-sm font-semibold">${money(avgDeal)}</span>
-      </div>
-      <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-400 tip">Rate integrity<span class="tip-text">% of booked deals where the AI held the listed rate — never overpaid under carrier pressure. 100% = perfect rate discipline.</span></span>
-        <span class="text-sm font-semibold text-success">${pct(exec.rate_integrity)}</span>
-      </div>
-      <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-400 tip">Concession cost<span class="tip-text">Total amount conceded above listed rates to close deals. Lower is better — $0 means the AI never stretched above listed rate.</span></span>
-        <span class="text-sm font-semibold ${rev.total_concession === 0 ? 'text-success' : 'text-warning'}">${rev.total_concession === 0 ? 'None — held firm' : money(rev.total_concession) + ' total'}</span>
-      </div>
-    </div>
-  `;
-
-  // Cost side
-  $('pl-cost').innerHTML = `
-    <p class="text-xs text-dark-500 uppercase tracking-wider mb-4">Cost Analysis</p>
-    <div class="space-y-3">
-      <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-400 tip">Human equivalent<span class="tip-text">${fmt(calls)} calls × $18/call (industry avg for carrier sales rep time)</span></span>
-        <span class="text-sm text-dark-300 line-through">${money(exec.human_cost_baseline)}</span>
-      </div>
-      <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-300">AI operating cost</span>
-        <span class="text-lg font-bold text-accent-light">${money(exec.ai_cost)}</span>
-      </div>
-      <div class="border-t border-white/10 pt-3 flex justify-between items-baseline">
-        <span class="text-sm text-dark-300 font-medium">Net savings</span>
-        <span class="text-lg font-bold text-success">${money(exec.cost_savings)}</span>
-      </div>
-      <div class="flex justify-between items-baseline">
-        <span class="text-sm text-dark-400 tip">Cost reduction<span class="tip-text">(Human cost − AI cost) ÷ Human cost × 100</span></span>
-        <span class="text-sm font-semibold text-success">${exec.human_cost_baseline > 0 ? pct(Math.round((exec.cost_savings / exec.human_cost_baseline) * 100)) : '—'}</span>
-      </div>
-    </div>
-  `;
-
-  // Unit economics
-  $('pl-unit').innerHTML = `
-    <p class="text-xs text-dark-500 uppercase tracking-wider mb-4">Unit Economics</p>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-      <div>
-        <p class="text-xs text-dark-400 tip">Revenue per call<span class="tip-text">Total booked revenue ÷ total calls (including non-booking calls). Shows revenue efficiency across all interactions.</span></p>
-        <p class="text-xl font-bold mt-1">${money(Math.round(revenuePerCall))}</p>
-      </div>
-      <div>
-        <p class="text-xs text-dark-400 tip">Cost per acquisition<span class="tip-text">AI operating cost ÷ booked deals. What it costs the AI to close one deal.</span></p>
-        <p class="text-xl font-bold mt-1 text-accent-light">${money(Math.round(costPerAcquisition))}</p>
-        <p class="text-xs text-dark-500 mt-0.5 line-through">${money(Math.round(humanCostPerAcquisition))} human</p>
-      </div>
-      <div>
-        <p class="text-xs text-dark-400 tip">Revenue per AI dollar<span class="tip-text">Total booked revenue ÷ AI operating cost. For every $1 spent on the AI, this much revenue was generated.</span></p>
-        <p class="text-xl font-bold mt-1">${exec.ai_cost > 0 ? '$' + Math.round(exec.total_revenue / exec.ai_cost) : '—'}</p>
-      </div>
-      <div>
-        <p class="text-xs text-dark-400 tip">Calls to close<span class="tip-text">Total calls ÷ booked deals. How many calls it takes on average to close one deal.</span></p>
-        <p class="text-xl font-bold mt-1">${funnel.booked > 0 ? (calls / funnel.booked).toFixed(1) : '—'}</p>
-      </div>
-    </div>
-  `;
-
-  // Projections
-  const scenarios = [
-    { label: 'Current Run Rate', daily: callsPerDay, highlight: false },
-    { label: 'Mid-Scale', daily: 50, highlight: false },
-    { label: 'Full Production', daily: 200, highlight: true },
-  ];
-
-  $('pl-projections').innerHTML = scenarios.map(s => {
-    const moCalls = Math.round(s.daily * 30);
-    const moRevenue = Math.round(moCalls * convRate * avgDeal);
-    const moSavings = Math.round(moCalls * 16.50); // $18 - $1.50
-    const yrSavings = moSavings * 12;
-    const ftes = (s.daily / 25).toFixed(1); // 25 calls/day per rep
-
-    return `<div class="rounded-xl p-4 ${s.highlight ? 'bg-accent/10 border-accent/30' : 'bg-white/[0.02] border-white/[0.06]'} border">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-sm font-semibold">${s.label}</p>
-        <span class="text-xs text-dark-400">${s.daily.toFixed(0)} calls/day</span>
-      </div>
-      <div class="space-y-2 text-sm">
-        <div class="flex justify-between">
-          <span class="text-dark-400">Monthly revenue</span>
-          <span class="font-medium">${money(moRevenue)}</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-dark-400">Monthly savings</span>
-          <span class="font-medium text-success">${money(moSavings)}</span>
-        </div>
-        <div class="flex justify-between border-t border-white/10 pt-2">
-          <span class="text-dark-300 font-medium tip">Annual savings<span class="tip-text">${fmt(moCalls)} calls/mo × $16.50 saved/call × 12 months. Replaces ${ftes} FTEs at ~$45K/yr each.</span></span>
-          <span class="font-bold text-success">${money(yrSavings)}/yr</span>
-        </div>
-        <div class="flex justify-between">
-          <span class="text-dark-400">FTE equivalent</span>
-          <span class="font-medium">${ftes} reps</span>
-        </div>
-      </div>
-    </div>`;
+  // S2: Funnel
+  const st=[{n:'Inbound Calls',c:fn.total_calls,cl:'#3b82f6'},{n:'Verified (FMCSA)',c:fn.fmcsa_verified,cl:'#60a5fa'},{n:'Load Pitched',c:fn.loads_pitched,cl:'#8b5cf6'},{n:'Negotiated',c:fn.entered_negotiation,cl:'#f59e0b'},{n:'Booked',c:fn.booked,cl:'#22c55e'}];
+  const mx=st[0].c||1;
+  $('fn').innerHTML=st.map((s,i)=>{
+    const w=Math.max((s.c/mx)*100,6);
+    const pt=i>0&&st[i-1].c>0?Math.round(s.c/st[i-1].c*100):100;
+    const dr=i>0&&pt<100?`<span class="text-[10px] text-[#4a5a73] ml-3">${pt}%</span>`:'';
+    return`<div class="flex items-center gap-3"><div class="w-32 text-[11px] text-[#8b9ab5] text-right shrink-0 font-medium">${s.n}</div><div class="flex-1 bg-[#111827] rounded-lg h-[38px] relative"><div class="fb" style="width:${w}%;background:${s.cl}">${s.c}</div></div>${dr}</div>`;
   }).join('');
+  const dp=fn.drop_offs||{};const bd=Object.entries(dp).sort((a,b)=>b[1]-a[1])[0];
+  let fm='Funnel healthy — no significant drop-offs.';
+  if(bd&&bd[1]>0){const rs={verification_fail:'FMCSA verification',no_load_match:'load inventory gaps',declined_after_pitch:'carriers declining loads',negotiation_failed:'pricing gaps'};fm=`Biggest loss: <strong>${bd[1]} calls</strong> to ${rs[bd[0]]||bd[0]}. ${bd[0]==='no_load_match'?'Source inventory on requested lanes.':bd[0]==='negotiation_failed'?'Review ceiling pricing.':'Investigate.'}`}
+  $('i2').innerHTML=`<p>${fm}</p>`;
 
-  // Quality proof - compact bar
-  $('pl-quality').innerHTML = `
-    <div class="flex items-center gap-2">
-      <span class="text-xs text-dark-500 uppercase tracking-wider">Quality Check</span>
-    </div>
-    <div class="flex items-center gap-6">
-      <div class="text-center">
-        <p class="text-sm font-bold ${exec.conversion_rate >= 30 ? 'text-success' : exec.conversion_rate >= 15 ? 'text-warning' : 'text-danger'}">${pct(exec.conversion_rate)}</p>
-        <p class="text-xs text-dark-500">Conversion</p>
-      </div>
-      <div class="text-center">
-        <p class="text-sm font-bold ${exp.satisfaction_rate >= 80 ? 'text-success' : exp.satisfaction_rate >= 60 ? 'text-warning' : 'text-danger'}">${pct(exp.satisfaction_rate)}</p>
-        <p class="text-xs text-dark-500">Satisfaction</p>
-      </div>
-      <div class="text-center">
-        <p class="text-sm font-bold text-success">100%</p>
-        <p class="text-xs text-dark-500">Ceiling Held</p>
-      </div>
-      <div class="text-center">
-        <p class="text-sm font-bold text-success">24/7</p>
-        <p class="text-xs text-dark-500">Availability</p>
-      </div>
-    </div>
-  `;
+  // S3: Revenue
+  const deals=rv.deals||[];
+  $('dt').querySelector('tbody').innerHTML=deals.length?deals.map(d=>{
+    const dl=d.agreed_price&&d.initial_rate?d.agreed_price-d.initial_rate:0;const dp2=d.initial_rate?(dl/d.initial_rate*100).toFixed(1):0;
+    const dc=dl===0?'text-green-400':dl>0?'text-amber-400':'text-green-400';
+    const dt2=dl===0?'At rate':dl>0?`+${M(dl)} (${dp2}%)`:M(dl);
+    return`<tr><td class="text-white font-semibold">${d.lane||'—'}</td><td class="mono text-[#8b9ab5]">${M(d.initial_rate)}</td><td class="mono text-white">${M(d.agreed_price)}</td><td class="${dc} text-xs font-semibold">${dt2}</td><td><span class="tag ${d.rounds===0?'tg':d.rounds<=2?'tb':'ta'}">${d.rounds}R</span></td></tr>`
+  }).join(''):'<tr><td colspan="5" class="text-center text-[#4a5a73] py-8">No deals yet</td></tr>';
+
+  $('rv').innerHTML=`<p class="text-[10px] uppercase tracking-wider text-[#4a5a73] font-bold mb-3">Revenue</p><p class="text-3xl font-extrabold">${M(ex.total_revenue)}</p><p class="text-[10px] text-[#4a5a73] mt-1">Total booked</p><div class="mt-4 pt-4 border-t border-[#1c2537] space-y-2"><div class="flex justify-between text-xs"><span class="text-[#4a5a73]">Avg Deal</span><span class="text-white font-medium">${M(rv.avg_deal_size)}</span></div><div class="flex justify-between text-xs"><span class="text-[#4a5a73]">Rate Integrity</span><span class="font-medium ${ex.rate_integrity>=80?'text-green-400':'text-amber-400'}">${P(ex.rate_integrity)}</span></div></div>`;
+  $('pl').innerHTML=`<p class="text-[10px] uppercase tracking-wider text-[#4a5a73] font-bold mb-3">Agent P&amp;L</p><div class="space-y-2"><div class="flex justify-between text-xs"><span class="text-[#4a5a73]">Human (${ex.total_calls}×$18)</span><span class="text-red-400">${M(ex.human_cost_baseline)}</span></div><div class="flex justify-between text-xs"><span class="text-[#4a5a73]">AI (${ex.total_calls}×$1.50)</span><span class="text-green-400">${M(ex.ai_cost)}</span></div><div class="flex justify-between text-xs mt-2 pt-2 border-t border-[#1c2537]"><span class="text-[#4a5a73]">Savings</span><span class="text-green-400 font-bold text-sm">${M(ex.cost_savings)}</span></div></div>`;
+
+  const cm=ex.avg_concession_pct>0?`Average concession <strong>${P(ex.avg_concession_pct)}</strong> above listed rate — below typical human 8-12% variance.`:'All deals at or below listed rate. Perfect rate discipline.';
+  $('i3').innerHTML=`<p>${cm}</p>`;
+
+  // S4: Lanes
+  const hl2=ln.top_lanes||[];
+  $('hl').querySelector('tbody').innerHTML=hl2.length?hl2.map(l=>{const lane=l.origin+' → '+l.destination;return`<tr><td class="text-white font-semibold">${lane}</td><td class="mono text-[#8b9ab5]">${l.total_calls}</td><td class="mono text-white">${l.booked}</td><td class="${l.conversion_pct>=60?'text-green-400':l.conversion_pct>=30?'text-amber-400':'text-red-400'} font-semibold">${P(l.conversion_pct)}</td></tr>`}).join(''):'<tr><td colspan="4" class="text-center text-[#4a5a73] py-6">No data</td></tr>';
+
+  const um=ln.unmet_demand||[];
+  $('ud').innerHTML=um.length?um.map(u=>`<div class="rec mb-3"><div class="flex items-start justify-between"><div><p class="text-sm text-white font-semibold">${u.origin||'?'} → ${u.destination||'Open'}</p><p class="text-[11px] text-[#4a5a73] mt-1">${u.equipment_type||'Any'} · ${u.carrier_requests} request(s)</p></div><span class="tag tr shrink-0">Source</span></div></div>`).join(''):'<p class="text-sm text-[#4a5a73] py-6 text-center">No unmet demand</p>';
+
+  const tl=hl2[0];const tlName=tl?tl.origin+' → '+tl.destination:'';$('i4').innerHTML=`<p>${tl?`<strong>${tlName}</strong> converts at ${P(tl.conversion_pct)}. ${um.length?um.length+' lane(s) with unmet demand — source inventory.':''}`:um.length?um.length+' lane(s) requested but no loads available.':'Collect more data to identify lane patterns.'}</p>`;
+
+  // S5: Negotiation
+  const ar=xp.avg_negotiation_rounds||0;const wa=(rj.breakdown||{}).rejected||0;const tn=fn.entered_negotiation||0;
+  let r0=0,r1=0,r2=0,r3=0;deals.forEach(d=>{if(d.rounds===0)r0++;else if(d.rounds===1)r1++;else if(d.rounds===2)r2++;else r3++});
+  const td2=deals.length||1;
+  const nk=[
+    {l:'Avg Rounds',v:ar.toFixed(1),s:'to close',c:'#3b82f6'},
+    {l:'Quick Close (≤2R)',v:P(((r0+r1+r2)/td2)*100),s:`${r0+r1+r2} of ${td2}`,c:'#22c55e'},
+    {l:'Walk-away Rate',v:tn>0?P(wa/tn*100):'0%',s:`${wa} failed`,c:wa>0?'#f59e0b':'#22c55e'},
+    {l:'Failed Gap',v:rj.avg_negotiation_gap_pct?P(rj.avg_negotiation_gap_pct):'—',s:'from ceiling',c:'#8b5cf6'},
+  ];
+  $('nk').innerHTML=nk.map(k=>`<div class="kpi p-5"><p class="text-[10px] uppercase tracking-wider text-[#4a5a73] font-bold">${k.l}</p><p class="text-[26px] font-extrabold mt-2" style="color:${k.c}">${k.v}</p><p class="text-[11px] text-[#4a5a73] mt-1">${k.s}</p></div>`).join('');
+  $('i5').innerHTML=`<p>${ar<=2?`Most deals close in ≤2 rounds. ${wa>0?wa+' walk-away(s) — review ceiling on those lanes.':'No walk-aways.'}`:`Avg ${ar.toFixed(1)} rounds — carriers pushing hard. Adjust opening rates.`}</p>`;
+
+  // S6: Experience
+  const sd=xp.sentiment||{};const sl=['positive','neutral','negative','hostile'];const sv=sl.map(s=>sd[s]||0);
+  if(window._sc)window._sc.destroy();
+  window._sc=new Chart($('sc').getContext('2d'),{type:'doughnut',data:{labels:sl.map(s=>s[0].toUpperCase()+s.slice(1)),datasets:[{data:sv,backgroundColor:sl.map(s=>SC[s]),borderWidth:0}]},options:{cutout:'72%',plugins:{legend:{display:false}},responsive:false}});
+  $('sp').textContent=P(xp.satisfaction_rate);
+
+  $('xm').innerHTML=`
+    <div><p class="text-[10px] uppercase tracking-wider text-[#4a5a73] font-bold mb-3">Sentiment</p>${sl.map(s=>`<div class="flex items-center justify-between text-xs mb-2"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:${SC[s]}"></span><span class="text-[#8b9ab5]">${s[0].toUpperCase()+s.slice(1)}</span></div><span class="text-white font-medium">${sd[s]||0}</span></div>`).join('')}</div>
+    <div><p class="text-[10px] uppercase tracking-wider text-[#4a5a73] font-bold mb-3">Carriers</p><div class="space-y-4"><div><p class="text-3xl font-extrabold">${xp.unique_carriers}</p><p class="text-[10px] text-[#4a5a73]">Unique carriers</p></div><div><p class="text-3xl font-extrabold text-blue-400">${xp.repeat_carriers}</p><p class="text-[10px] text-[#4a5a73]">Repeat (${P(xp.repeat_rate)})</p></div></div></div>`;
+
+  const hc=sd.hostile||0;
+  $('i6').innerHTML=`<p>${hc>0?`${P(xp.satisfaction_rate)} satisfaction. <strong class="text-red-400">${hc} hostile</strong> interaction(s) — review de-escalation.`:`${P(xp.satisfaction_rate)} satisfaction. ${xp.repeat_carriers} repeat caller(s) coming back.`}</p>`;
+
+  // S7: Recommendations
+  const recs=[];
+  um.forEach(u=>recs.push({p:0,i:'📦',t:`Source <strong>${u.equipment_type||'loads'}</strong> on <strong>${u.origin||'?'} → ${u.destination||'Open'}</strong> — ${u.carrier_requests} carrier(s) requesting.`,g:'Source'}));
+  hl2.filter(l=>l.conversion_pct>=60&&l.booked>=1).forEach(l=>recs.push({p:1,i:'🔥',t:`<strong>${l.origin} → ${l.destination}</strong> converts at ${P(l.conversion_pct)} — increase inventory.`,g:'Scale Up'}));
+  if(wa>0)recs.push({p:1,i:'💰',t:`${wa} negotiation(s) failed. Avg gap ${P(rj.avg_negotiation_gap_pct)} from ceiling. Consider +2% on contested lanes.`,g:'Pricing'});
+  if(hc>0)recs.push({p:2,i:'⚡',t:`${hc} hostile interaction(s). Review transcripts, refine de-escalation.`,g:'Training'});
+  if(xp.repeat_carriers>0)recs.push({p:2,i:'⭐',t:`${xp.repeat_carriers} repeat carrier(s) — assign dedicated rep for high-value relationships.`,g:'Nurture'});
+  if(ex.rate_integrity<80)recs.push({p:0,i:'🛡️',t:`Rate integrity at ${P(ex.rate_integrity)} — AI conceding too often. Tighten ceiling.`,g:'Rate Control'});
+  if(!recs.length)recs.push({p:2,i:'✅',t:'System performing well. Monitor as volume grows.',g:'On Track'});
+  recs.sort((a,b)=>a.p-b.p);
+  $('rc').innerHTML=recs.map(r=>{const tc=r.p===0?'tr':r.p===1?'ta':'tg';return`<div class="rec flex items-start gap-4"><span class="text-lg mt-0.5">${r.i}</span><div class="flex-1"><p class="text-[13px] text-[#e2e8f0] leading-relaxed">${r.t}</p></div><span class="tag ${tc} shrink-0">${r.g}</span></div>`}).join('');
+
+  // Activity
+  $('al').querySelector('tbody').innerHTML=rc.length?rc.map(c=>{
+    const ol=OL[c.outcome]||c.outcome;const oc=OC[c.outcome]||'#6b7280';
+    const ln2=c.load_id?(deals.find(x=>x.load_id===c.load_id)||{}).lane||c.load_id:'—';
+    const rt=c.outcome==='booked'?M(c.agreed_price):c.initial_rate?M(c.initial_rate):'—';
+    return`<tr><td class="text-[#4a5a73] text-[11px]">${TA(c.created_at)}</td><td class="text-white text-xs font-medium">${c.carrier_name||c.carrier_mc||'—'}</td><td class="text-[#8b9ab5] text-xs">${ln2}</td><td><span class="tag" style="background:${oc}12;color:${oc}">${ol}</span></td><td><span class="w-2 h-2 rounded-full inline-block" style="background:${SC[c.sentiment]||'#3b82f6'}"></span> <span class="text-[11px] text-[#8b9ab5]">${c.sentiment||'—'}</span></td><td class="mono text-xs">${rt}</td></tr>`
+  }).join(''):'<tr><td colspan="6" class="text-center text-[#4a5a73] py-8">No calls yet</td></tr>';
 }
 
-// Load on start
-loadData();
-// Auto-refresh every 30 seconds
-setInterval(loadData, 30000);
+L();setInterval(L,30000);
 </script>
 </body>
 </html>
