@@ -15,14 +15,12 @@ body{background:#f0f2f7;color:#1e293b;font-family:'Plus Jakarta Sans',sans-serif
 .card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07)}
 .kpi{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;position:relative;transition:all .3s;cursor:default}
 .kpi:hover{box-shadow:0 6px 24px rgba(0,0,0,.08);transform:translateY(-2px)}
-.kpi-accent{position:absolute;top:0;left:0;right:0;height:4px;border-radius:16px 16px 0 0}
+.kpi-bar{position:absolute;top:0;left:0;right:0;height:4px;border-radius:16px 16px 0 0}
 .insight{background:#f8fafc;border-left:4px solid #3b82f6;border-radius:0 12px 12px 0;padding:14px 20px;margin-top:16px}
-.insight p{font-size:.82rem;color:#64748b;line-height:1.7}
-.insight strong{color:#1e293b}
+.insight p{font-size:.82rem;color:#64748b;line-height:1.7}.insight strong{color:#1e293b}
 .tag{padding:3px 10px;border-radius:6px;font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:inline-block}
 .tg{background:#dcfce7;color:#16a34a}.ta{background:#fef3c7;color:#d97706}.tr{background:#fee2e2;color:#dc2626}.tb{background:#dbeafe;color:#2563eb}.tp{background:#ede9fe;color:#7c3aed}
-.tip{position:relative;z-index:1}
-.tip:hover{z-index:50}
+.tip{position:relative;z-index:1}.tip:hover{z-index:50}
 .tip .tt{visibility:hidden;opacity:0;background:#1e293b;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:.73rem;line-height:1.55;width:270px;position:absolute;z-index:999;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);transition:opacity .15s;box-shadow:0 12px 32px rgba(0,0,0,.3);pointer-events:none}
 .tip .tt::after{content:'';position:absolute;top:100%;left:50%;margin-left:-5px;border:5px solid transparent;border-top-color:#1e293b}
 .tip:hover .tt{visibility:visible;opacity:1}
@@ -32,10 +30,11 @@ table{border-collapse:separate;border-spacing:0;width:100%}
 th{text-transform:uppercase;font-size:.63rem;letter-spacing:.07em;color:#94a3b8;font-weight:700;padding:10px 14px;text-align:left;border-bottom:2px solid #f1f5f9}
 td{font-size:.8rem;padding:11px 14px;border-bottom:1px solid #f1f5f9;color:#334155}
 tr:hover td{background:#f8fafc}
-.funnel-shape{height:48px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-weight:700;font-size:.85rem;color:#fff;transition:all .4s;min-width:60px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.funnel-shape{height:46px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-weight:700;font-size:.85rem;color:#fff;transition:all .4s;min-width:60px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 .funnel-shape:hover{transform:scaleX(1.02);box-shadow:0 4px 16px rgba(0,0,0,.15)}
 .dc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-.cov-bar{height:32px;border-radius:8px;display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:.75rem;color:#fff;transition:width 1s ease}
+.mkpi{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;transition:border-color .2s}
+.mkpi:hover{border-color:#93c5fd}
 @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 #ct>div{animation:up .4s ease both}
 #ct>div:nth-child(2){animation-delay:.05s}#ct>div:nth-child(3){animation-delay:.1s}#ct>div:nth-child(4){animation-delay:.15s}
@@ -49,7 +48,7 @@ tr:hover td{background:#f8fafc}
 <div class="max-w-[1320px] mx-auto flex items-center justify-between">
   <div class="flex items-center gap-3">
     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-extrabold shadow-lg shadow-blue-500/25">A</div>
-    <div><h1 class="text-lg font-extrabold tracking-tight text-slate-800">Carrier Sales Intelligence</h1><p class="text-[11px] text-slate-400 mt-0.5 font-medium">Acme Logistics · AI-Powered Operations</p></div>
+    <div><h1 class="text-lg font-extrabold tracking-tight text-slate-800">Carrier Sales Intelligence</h1><p class="text-[11px] text-slate-400 mt-0.5 font-medium">Acme Logistics · AI Agent Performance</p></div>
   </div>
   <div class="flex items-center gap-5">
     <select id="ps" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20" onchange="L()"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select>
@@ -63,10 +62,10 @@ tr:hover td{background:#f8fafc}
 <div id="ld" class="text-center py-24"><div class="inline-flex items-center gap-3"><div class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div><p class="text-slate-400 text-sm font-medium">Loading dashboard...</p></div></div>
 <div id="ct" style="display:none">
 
-<!-- KPIs -->
+<!-- 1. KPIs -->
 <div><div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="k1"></div><div class="insight mt-4" id="i1"></div></div>
 
-<!-- Funnel + Outcomes -->
+<!-- 2. Funnel + Outcomes -->
 <div class="mt-8">
 <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
   <div class="card p-6 lg:col-span-3"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-5">Conversion Funnel</p><div id="fn" class="space-y-2"></div></div>
@@ -75,7 +74,7 @@ tr:hover td{background:#f8fafc}
 <div class="insight mt-4" id="i2"></div>
 </div>
 
-<!-- Deals + Revenue -->
+<!-- 3. Deals + Revenue -->
 <div class="mt-8">
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
   <div class="card p-6 lg:col-span-2"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Recent Deals</p><div class="overflow-x-auto"><table id="dt"><thead><tr><th>Lane</th><th>Listed</th><th>Agreed</th><th>Δ</th><th>Rnds</th></tr></thead><tbody></tbody></table></div></div>
@@ -84,25 +83,25 @@ tr:hover td{background:#f8fafc}
 <div class="insight mt-4" id="i3"></div>
 </div>
 
-<!-- ★ NEGOTIATION REPLAY -->
-<div class="mt-8" id="replay-section" style="display:none">
+<!-- 4. Negotiation Replay -->
+<div class="mt-8" id="replay-wrap" style="display:none">
 <div class="card p-6">
-  <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">🎯 Negotiation Replay — Latest Booked Deal</p>
+  <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Negotiation Replay — Latest Booked Deal</p>
   <p class="text-xs text-slate-400 mb-4" id="replay-sub"></p>
   <div style="height:220px"><canvas id="replay-chart"></canvas></div>
 </div>
 </div>
 
-<!-- Lanes -->
+<!-- 5. Lane Intelligence -->
 <div class="mt-8">
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-  <div class="card p-6"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">🔥 Hot Lanes</p><table id="hl"><thead><tr><th>Lane</th><th>Calls</th><th>Booked</th><th>Conv</th></tr></thead><tbody></tbody></table></div>
-  <div class="card p-6"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">📦 Unmet Demand</p><div id="ud"></div></div>
+  <div class="card p-6"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Hot Lanes</p><table id="hl"><thead><tr><th>Lane</th><th>Calls</th><th>Booked</th><th>Conv</th></tr></thead><tbody></tbody></table></div>
+  <div class="card p-6"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Unmet Demand</p><div id="ud"></div></div>
 </div>
 <div class="insight mt-4" id="i4"></div>
 </div>
 
-<!-- Negotiation + Experience -->
+<!-- 6. Negotiation + Experience -->
 <div class="mt-8">
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
   <div class="card p-6"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Negotiation Performance</p><div class="grid grid-cols-2 gap-3" id="nk"></div><div class="insight mt-4" id="i5"></div></div>
@@ -110,33 +109,30 @@ tr:hover td{background:#f8fafc}
 </div>
 </div>
 
-<!-- ★ COVERAGE + SCALE PROJECTOR -->
+<!-- 7. Operational Efficiency + Scale Projector -->
 <div class="mt-8">
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-  <!-- Coverage -->
-  <div class="card p-6 relative">
-    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full pointer-events-none"></div>
-    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4 relative">🕐 Coverage Comparison</p>
-    <div class="space-y-4 relative" id="cov"></div>
+  <div class="card p-6">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Operational Efficiency</p>
+    <div class="grid grid-cols-2 gap-3" id="ops"></div>
+    <div class="insight mt-4" id="i7"></div>
   </div>
-  <!-- Scale Projector -->
-  <div class="card p-6 relative">
-    <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-emerald-50 to-transparent rounded-bl-full pointer-events-none"></div>
-    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1 relative">📈 Scale Projector</p>
-    <p class="text-[10px] text-slate-400 mb-4 relative">Your current metrics → projected at scale</p>
-    <div class="relative" id="scale"></div>
-    <div class="relative mt-4" style="height:160px"><canvas id="scale-chart"></canvas></div>
+  <div class="card p-6">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Scale Projector</p>
+    <p class="text-[10px] text-slate-400 mb-4">Current performance extrapolated at scale</p>
+    <div id="scale"></div>
+    <div style="height:150px;margin-top:12px"><canvas id="scale-chart"></canvas></div>
   </div>
 </div>
 </div>
 
-<!-- Recommendations -->
+<!-- 8. Recommendations -->
 <div class="mt-8">
-<p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-3">💡 What To Do Next</p>
+<p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-3">Recommended Actions</p>
 <div id="rc" class="space-y-2.5"></div>
 </div>
 
-<!-- Activity -->
+<!-- 9. Activity -->
 <div class="mt-8">
 <div class="card p-6"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Activity Log</p><div class="overflow-x-auto"><table id="al"><thead><tr><th>Time</th><th>Carrier</th><th>Lane</th><th>Outcome</th><th>Sentiment</th><th>Rate</th></tr></thead><tbody></tbody></table></div></div>
 </div>
@@ -156,34 +152,28 @@ const OL={booked:'Booked',rejected:'Rejected',carrier_declined:'Declined',no_mat
 const SC={positive:'#16a34a',neutral:'#2563eb',negative:'#d97706',hostile:'#dc2626'};
 function TA(iso){if(!iso)return'—';const m=Math.floor((Date.now()-new Date(iso))/6e4);return m<1?'Now':m<60?m+'m':m<1440?Math.floor(m/60)+'h':Math.floor(m/1440)+'d'}
 function tip(l,e){return`<div class="tip"><p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold">${l}<span class="tt">${e}</span></p></div>`}
-function minikpi(l,v,tt){return`<div class="tip p-4 rounded-xl bg-slate-50 border border-slate-100"><span class="tt">${tt}</span><p class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">${l}</p><p class="text-xl font-extrabold mt-1 text-slate-800">${v}</p></div>`}
+function mkpi(l,v,tt){return`<div class="mkpi tip"><span class="tt">${tt}</span><p class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">${l}</p><p class="text-xl font-extrabold mt-1 text-slate-800">${v}</p></div>`}
 
 async function L(){
-  try{
-    const r=await fetch(`${API}/dashboard/data?days=${$('ps').value}`,{headers:H});
-    const d=await r.json();R(d);$('ld').style.display='none';$('ct').style.display='block';
-  }catch(e){$('ld').innerHTML='<p class="text-red-500 text-sm">Failed to load</p>'}
+  try{const r=await fetch(`${API}/dashboard/data?days=${$('ps').value}`,{headers:H});const d=await r.json();R(d);$('ld').style.display='none';$('ct').style.display='block'}
+  catch(e){$('ld').innerHTML='<p class="text-red-500 text-sm">Failed to load</p>'}
 }
 
 function R(d){
   const{executive:ex,funnel:fn,revenue:rv,lanes:ln,rejections:rj,experience:xp,recent_calls:rc}=d;
   $('ga').textContent='Updated '+new Date(d.generated_at).toLocaleString();
 
-  // === KPIs ===
+  // 1. KPIs
   const kpis=[
-    {l:'Calls Handled',v:ex.total_calls,s:`${fn.booked||0} booked`,c:'#3b82f6',bg:'from-blue-500 to-blue-600',
-     tt:'Total inbound carrier calls handled by the AI agent in the selected period. Includes all outcomes.'},
-    {l:'Conversion Rate',v:P(ex.conversion_rate),s:`${fn.booked||0} of ${ex.total_calls} calls`,c:'#16a34a',bg:'from-emerald-500 to-emerald-600',
-     tt:'Booked ÷ Total Calls. Measures how effectively the AI converts carrier inquiries into confirmed bookings. Industry avg for human reps: 15-25%.'},
-    {l:'Revenue Booked',v:M(ex.total_revenue),s:`avg deal ${M(rv.avg_deal_size||0)}`,c:'#d97706',bg:'from-amber-500 to-orange-500',
-     tt:'Sum of all agreed prices from booked loads. Represents total carrier-side revenue negotiated by the AI agent.'},
-    {l:'Cost Savings',v:M(ex.cost_savings),s:`${ex.roi_pct}% ROI vs human`,c:'#7c3aed',bg:'from-violet-500 to-purple-600',
-     tt:`Human reps cost ~$18/call (industry avg $15-25). AI costs ~$1.50/call. Net savings = (${ex.total_calls} × $18) − (${ex.total_calls} × $1.50) = ${M(ex.cost_savings)}.`},
+    {l:'Calls Handled',v:ex.total_calls,s:`${fn.booked||0} booked`,c:'#3b82f6',bg:'from-blue-500 to-blue-600',tt:'Total inbound carrier calls handled by the AI agent. Includes all outcomes: booked, rejected, declined, no match, and follow-ups.'},
+    {l:'Conversion Rate',v:P(ex.conversion_rate),s:`${fn.booked||0} of ${ex.total_calls} calls`,c:'#16a34a',bg:'from-emerald-500 to-emerald-600',tt:'Booked ÷ Total Calls. Measures how effectively the AI converts carrier inquiries into bookings. Industry avg for human reps: 15-25%.'},
+    {l:'Revenue Booked',v:M(ex.total_revenue),s:`avg deal ${M(rv.avg_deal_size||0)}`,c:'#d97706',bg:'from-amber-500 to-orange-500',tt:'Sum of agreed prices from all booked loads. Total carrier-side revenue negotiated by the AI.'},
+    {l:'Cost Savings',v:M(ex.cost_savings),s:`${ex.roi_pct}% ROI`,c:'#7c3aed',bg:'from-violet-500 to-purple-600',tt:`Human reps cost ~$18/call (industry avg). AI costs ~$1.50/call. Net savings on ${ex.total_calls} calls = ${M(ex.cost_savings)}.`},
   ];
-  $('k1').innerHTML=kpis.map(k=>`<div class="kpi tip"><span class="tt">${k.tt}</span><div class="kpi-accent bg-gradient-to-r ${k.bg}"></div><p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">${k.l}</p><p class="text-3xl font-extrabold mt-2" style="color:${k.c}">${k.v}</p><p class="text-[11px] text-slate-400 mt-1 font-medium">${k.s}</p></div>`).join('');
-  $('i1').innerHTML=`<p>AI handled <strong>${ex.total_calls} calls</strong>. Human cost: <strong>${M(ex.human_cost_baseline)}</strong>, AI cost: <strong>${M(ex.ai_cost)}</strong> — saving <strong style="color:#16a34a">${M(ex.cost_savings)}</strong>.</p>`;
+  $('k1').innerHTML=kpis.map(k=>`<div class="kpi tip"><span class="tt">${k.tt}</span><div class="kpi-bar bg-gradient-to-r ${k.bg}"></div><p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">${k.l}</p><p class="text-3xl font-extrabold mt-2" style="color:${k.c}">${k.v}</p><p class="text-[11px] text-slate-400 mt-1 font-medium">${k.s}</p></div>`).join('');
+  $('i1').innerHTML=`<p>AI handled <strong>${ex.total_calls} calls</strong>. Human cost would be <strong>${M(ex.human_cost_baseline)}</strong> vs <strong>${M(ex.ai_cost)}</strong> with AI — saving <strong style="color:#16a34a">${M(ex.cost_savings)}</strong>.</p>`;
 
-  // === Funnel ===
+  // 2. Funnel
   const stages=[
     {n:'Inbound Calls',c:fn.total_calls,bg:'linear-gradient(135deg,#3b82f6,#2563eb)'},
     {n:'FMCSA Verified',c:fn.fmcsa_verified,bg:'linear-gradient(135deg,#6366f1,#4f46e5)'},
@@ -199,21 +189,21 @@ function R(d){
     return`${arrow}<div class="flex items-center gap-4"><div class="w-28 text-right shrink-0"><p class="text-xs font-bold text-slate-600">${s.n}</p></div><div class="funnel-shape" style="width:${w}%;background:${s.bg}">${s.c}</div></div>`;
   }).join('');
 
-  // Outcome donut
+  // Outcome donut + legends
   const oKeys=Object.keys(OL);
   const oVals=oKeys.map(k=>{const m=fn.drop_offs||{};if(k==='booked')return fn.booked;if(k==='rejected')return m.negotiation_failed||0;if(k==='carrier_declined')return m.declined_after_pitch||0;if(k==='no_match')return m.no_load_match||0;if(k==='needs_follow_up')return Math.max(0,fn.total_calls-fn.booked-(m.negotiation_failed||0)-(m.declined_after_pitch||0)-(m.no_load_match||0)-(m.verification_fail||0));return 0});
   if(window._oc)window._oc.destroy();
   window._oc=new Chart($('oc').getContext('2d'),{type:'doughnut',data:{labels:oKeys.map(k=>OL[k]),datasets:[{data:oVals,backgroundColor:oKeys.map(k=>OC[k]),borderWidth:2,borderColor:'#fff'}]},options:{cutout:'62%',plugins:{legend:{display:false}},responsive:false}});
   $('bc').textContent=fn.booked||0;
   const oT=oVals.reduce((a,b)=>a+b,0)||1;
-  $('ol').innerHTML=oKeys.map((k,i)=>`<div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm shrink-0" style="background:${OC[k]}"></span><span class="text-xs font-medium text-slate-600">${OL[k]}</span></div><div class="text-right"><span class="text-xs font-bold text-slate-800">${oVals[i]}</span><span class="text-[10px] text-slate-400 ml-1">${Math.round(oVals[i]/oT*100)}%</span></div></div>`).join('');
+  $('ol').innerHTML=oKeys.map((k,i)=>`<div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm shrink-0" style="background:${OC[k]}"></span><span class="text-xs font-medium text-slate-600">${OL[k]}</span></div><div class="text-right"><span class="text-xs font-bold">${oVals[i]}</span><span class="text-[10px] text-slate-400 ml-1">${Math.round(oVals[i]/oT*100)}%</span></div></div>`).join('');
 
   const dp=fn.drop_offs||{};const bd=Object.entries(dp).sort((a,b)=>b[1]-a[1])[0];
   let fm='Funnel is healthy — no significant drop-offs.';
   if(bd&&bd[1]>0){const rs={verification_fail:'FMCSA verification',no_load_match:'load inventory gaps',declined_after_pitch:'carriers declining loads',negotiation_failed:'pricing gaps'};fm=`Biggest loss: <strong>${bd[1]} calls</strong> to ${rs[bd[0]]||bd[0]}. ${bd[0]==='no_load_match'?'Source inventory on requested lanes.':bd[0]==='negotiation_failed'?'Review ceiling pricing.':'Investigate root cause.'}`}
   $('i2').innerHTML=`<p>${fm}</p>`;
 
-  // === Deals ===
+  // 3. Deals + Revenue
   const deals=rv.deals||[];
   $('dt').querySelector('tbody').innerHTML=deals.length?deals.map(dl=>{
     const delta=(dl.agreed_price!=null&&dl.initial_rate!=null)?dl.agreed_price-dl.initial_rate:0;
@@ -223,192 +213,98 @@ function R(d){
     return`<tr><td class="font-semibold">${dl.lane||'—'}</td><td class="mono text-slate-400">${M(dl.initial_rate)}</td><td class="mono font-semibold">${M(dl.agreed_price)}</td><td class="${dc2} text-xs font-bold">${dt2}</td><td><span class="tag ${dl.rounds===0?'tg':dl.rounds<=2?'tb':'ta'}">${dl.rounds}R</span></td></tr>`;
   }).join(''):'<tr><td colspan="5" class="text-center text-slate-400 py-8">No deals yet</td></tr>';
 
-  $('rv').innerHTML=`${tip('Revenue','Sum of agreed prices from booked loads. Avg Deal = total revenue ÷ number of bookings.')}<p class="text-3xl font-extrabold mt-2 text-slate-800">${M(ex.total_revenue)}</p><div class="mt-3 pt-3 border-t border-slate-100 space-y-1.5"><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Avg Deal</span><span class="font-bold">${M(rv.avg_deal_size)}</span></div><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Bookings</span><span class="font-bold">${fn.booked||0}</span></div><div class="flex justify-between text-xs tip"><span class="text-slate-400 font-medium">Avg Concession</span><span class="font-bold ${ex.avg_concession_pct>5?'text-amber-600':'text-emerald-600'}">${P(ex.avg_concession_pct)}</span><span class="tt">Average % the AI stretches above loadboard rate. Under 5% = strong discipline. Human reps typically concede 8-12%.</span></div></div>`;
-  $('pl').innerHTML=`${tip('Agent P&L','Cost comparison: human reps ($18/call industry avg) vs AI ($1.50/call).')}<div class="mt-2 space-y-1.5"><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Human (${ex.total_calls}×$18)</span><span class="text-red-500 font-bold">${M(ex.human_cost_baseline)}</span></div><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">AI (${ex.total_calls}×$1.50)</span><span class="text-emerald-600 font-bold">${M(ex.ai_cost)}</span></div><div class="flex justify-between text-xs mt-2 pt-2 border-t border-slate-100"><span class="text-slate-400 font-medium">Net Savings</span><span class="text-emerald-600 font-extrabold text-sm">${M(ex.cost_savings)}</span></div></div>`;
-  $('i3').innerHTML=`<p>${ex.avg_concession_pct>0?`Average concession <strong>${P(ex.avg_concession_pct)}</strong> above listed rate — below typical human 8-12% variance.`:'All deals at listed rate. Perfect discipline.'}</p>`;
+  $('rv').innerHTML=`${tip('Revenue','Sum of agreed prices from booked loads.')}<p class="text-3xl font-extrabold mt-2">${M(ex.total_revenue)}</p><div class="mt-3 pt-3 border-t border-slate-100 space-y-1.5"><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Avg Deal</span><span class="font-bold">${M(rv.avg_deal_size)}</span></div><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Bookings</span><span class="font-bold">${fn.booked||0}</span></div><div class="flex justify-between text-xs tip"><span class="text-slate-400 font-medium">Avg Concession</span><span class="font-bold ${ex.avg_concession_pct>5?'text-amber-600':'text-emerald-600'}">${P(ex.avg_concession_pct)}</span><span class="tt">Average % above loadboard rate the AI concedes during negotiation. Under 5% = strong discipline. Human reps typically concede 8-12%.</span></div></div>`;
+  $('pl').innerHTML=`${tip('Agent P&L','Compares what these calls would cost with human reps vs AI.')}<div class="mt-2 space-y-1.5"><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Human (${ex.total_calls}×$18)</span><span class="text-red-500 font-bold">${M(ex.human_cost_baseline)}</span></div><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">AI (${ex.total_calls}×$1.50)</span><span class="text-emerald-600 font-bold">${M(ex.ai_cost)}</span></div><div class="flex justify-between text-xs mt-2 pt-2 border-t border-slate-100"><span class="text-slate-400 font-medium">Net Savings</span><span class="text-emerald-600 font-extrabold text-sm">${M(ex.cost_savings)}</span></div></div>`;
+  $('i3').innerHTML=`<p>${ex.avg_concession_pct>0?`Average concession <strong>${P(ex.avg_concession_pct)}</strong> above listed rate — below typical human 8-12% variance.`:'All deals closed at listed rate.'}</p>`;
 
-  // === NEGOTIATION REPLAY ===
+  // 4. Negotiation Replay
   const bookedWithNeg=rc.filter(c=>c.outcome==='booked'&&c.counter_offers&&c.counter_offers.length>0);
   if(bookedWithNeg.length>0){
-    $('replay-section').style.display='block';
-    const latest=bookedWithNeg[0];
-    const ed=latest.extracted_data||{};
+    $('replay-wrap').style.display='block';
+    const latest=bookedWithNeg[0];const ed=latest.extracted_data||{};
     $('replay-sub').textContent=`${ed.lane||latest.load_id||'—'} · ${latest.carrier_name||'Carrier'} · Agreed at ${M(latest.agreed_price)}`;
     const co=latest.counter_offers;
-    const labels=['Pitch',...co.map(c=>'R'+c.round),'Deal'];
+    const labels=['Pitch',...co.map(c=>'Round '+c.round),'Deal'];
     const carrierLine=[null,...co.map(c=>c.carrier_offer),latest.agreed_price];
     const agentLine=[latest.initial_rate,...co.map(c=>c.our_counter),latest.agreed_price];
     if(window._rc)window._rc.destroy();
-    window._rc=new Chart($('replay-chart').getContext('2d'),{
-      type:'line',
-      data:{
-        labels:labels,
-        datasets:[
-          {label:'Carrier Asks',data:carrierLine,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.08)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#dc2626',tension:.3,fill:false,spanGaps:true},
-          {label:'Agent Offers',data:agentLine,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.08)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#2563eb',tension:.3,fill:false},
-        ]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{family:'Plus Jakarta Sans',size:12,weight:'600'}}},
-          tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+Number(ctx.raw).toLocaleString()}}},
-        scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+Number(v).toLocaleString(),font:{family:'JetBrains Mono',size:11}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}}
-      }
-    });
-  }else{$('replay-section').style.display='none'}
+    window._rc=new Chart($('replay-chart').getContext('2d'),{type:'line',data:{labels,datasets:[
+      {label:'Carrier Asks',data:carrierLine,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.05)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#dc2626',tension:.3,fill:false,spanGaps:true},
+      {label:'Agent Counters',data:agentLine,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.05)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#2563eb',tension:.3,fill:false},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{family:'Plus Jakarta Sans',size:12,weight:'600'}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+Number(ctx.raw).toLocaleString()}}},scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+Number(v).toLocaleString(),font:{family:'JetBrains Mono',size:11}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}}}});
+  }else{$('replay-wrap').style.display='none'}
 
-  // === Lanes ===
+  // 5. Lanes
   const hl2=ln.top_lanes||[];
   $('hl').querySelector('tbody').innerHTML=hl2.length?hl2.map(l=>{const lane=l.origin+' → '+l.destination;return`<tr><td class="font-semibold">${lane}</td><td class="mono text-slate-400">${l.total_calls}</td><td class="mono font-semibold">${l.booked}</td><td class="${l.conversion_pct>=60?'text-emerald-600':l.conversion_pct>=30?'text-amber-600':'text-red-500'} font-bold">${P(l.conversion_pct)}</td></tr>`}).join(''):'<tr><td colspan="4" class="text-center text-slate-400 py-6">No data</td></tr>';
   const um=ln.unmet_demand||[];
   $('ud').innerHTML=um.length?um.map(u=>`<div class="flex items-center justify-between py-3 border-b border-slate-100 last:border-0"><div><p class="text-sm font-semibold text-slate-700">${u.origin||'?'} → ${u.destination||'Open'}</p><p class="text-[10px] text-slate-400 mt-0.5 font-medium">${u.equipment_type||'Any'} · ${u.carrier_requests} request(s)</p></div><span class="tag tr">Source</span></div>`).join(''):'<p class="text-sm text-slate-400 py-6 text-center">No unmet demand</p>';
   const tl=hl2[0];const tlN=tl?tl.origin+' → '+tl.destination:'';
-  $('i4').innerHTML=`<p>${tl?`<strong>${tlN}</strong> converts at ${P(tl.conversion_pct)}. ${um.length?um.length+' lane(s) with unmet demand — source inventory.':''}`:um.length?um.length+' lane(s) requested with no loads.':'More data needed.'}</p>`;
+  $('i4').innerHTML=`<p>${tl?`<strong>${tlN}</strong> converts at ${P(tl.conversion_pct)}. ${um.length?um.length+' lane(s) with unmet carrier demand — source inventory.':''}`:um.length?um.length+' lane(s) requested with no loads.':'More data needed.'}</p>`;
 
-  // === Negotiation KPIs ===
+  // 6. Negotiation + Experience
   const ar=xp.avg_negotiation_rounds||0;const wa=(rj.breakdown||{}).rejected||0;
   let r0=0,r1=0,r2=0,r3=0;deals.forEach(dl=>{if(dl.rounds===0)r0++;else if(dl.rounds===1)r1++;else if(dl.rounds===2)r2++;else r3++});
   const td2=deals.length||1;
   $('nk').innerHTML=[
-    minikpi('Avg Rounds',ar.toFixed(1),'Average negotiation rounds before closing. 0 = carrier accepted immediately. Lower = faster.'),
-    minikpi('Quick Close (≤2R)',P(((r0+r1+r2)/td2)*100),'Percentage of deals closed in 2 rounds or fewer. Higher = more efficient AI negotiation.'),
-    minikpi('Walk-aways',''+wa,'Negotiations that failed — carrier and AI could not agree. Higher = pricing may be off-market.'),
-    minikpi('Failed Gap',rj.avg_negotiation_gap_pct?P(rj.avg_negotiation_gap_pct):'—','How far apart (%) we were from our ceiling when deals failed. Smaller gap = we were close to a deal.'),
+    mkpi('Avg Rounds',ar.toFixed(1),'Average negotiation rounds before deal closes. 0 = carrier accepted listed rate immediately.'),
+    mkpi('Quick Close (≤2R)',P(((r0+r1+r2)/td2)*100),'Percentage of deals closed within 2 rounds. Higher = more efficient negotiation.'),
+    mkpi('Walk-aways',''+wa,'Negotiations that failed — carrier and agent could not agree on price within 3 rounds.'),
+    mkpi('Failed Gap',rj.avg_negotiation_gap_pct?P(rj.avg_negotiation_gap_pct):'—','How far (%) we were from our max ceiling when deals failed. Smaller = we were close to closing.'),
   ].join('');
-  $('i5').innerHTML=`<p>${ar<=2?`Most deals close in ≤2 rounds. ${wa>0?wa+' walk-away(s) — review ceiling.':'No walk-aways.'}`:'Avg '+ar.toFixed(1)+' rounds — carriers pushing. Adjust opening rates.'}</p>`;
+  $('i5').innerHTML=`<p>${ar<=2?`Most deals close in ≤2 rounds. ${wa>0?wa+' walk-away(s) — review ceiling on those lanes.':'No walk-aways.'}`:'Avg '+ar.toFixed(1)+' rounds — carriers pushing hard. Consider adjusting opening rates.'}</p>`;
 
-  // === Experience ===
   const sd=xp.sentiment||{};const sl=['positive','neutral','negative','hostile'];const sv=sl.map(s=>sd[s]||0);
   if(window._sc)window._sc.destroy();
   window._sc=new Chart($('sc').getContext('2d'),{type:'doughnut',data:{labels:sl.map(s=>s[0].toUpperCase()+s.slice(1)),datasets:[{data:sv,backgroundColor:sl.map(s=>SC[s]),borderWidth:2,borderColor:'#fff'}]},options:{cutout:'68%',plugins:{legend:{display:false}},responsive:false}});
   $('sp').textContent=P(xp.satisfaction_rate);
-  $('xm').innerHTML=`${sl.map(s=>`<div class="flex items-center justify-between text-xs"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm shrink-0" style="background:${SC[s]}"></span><span class="text-slate-500 font-medium">${s[0].toUpperCase()+s.slice(1)}</span></div><span class="font-bold text-slate-700">${sd[s]||0}</span></div>`).join('')}<div class="pt-2 mt-2 border-t border-slate-100 space-y-1.5"><div class="flex justify-between text-xs tip"><span class="text-slate-400 font-medium">Unique carriers</span><span class="font-bold text-slate-700">${xp.unique_carriers}</span><span class="tt">Number of distinct MC numbers that called in the period.</span></div><div class="flex justify-between text-xs tip"><span class="text-slate-400 font-medium">Repeat callers</span><span class="font-bold text-blue-600">${xp.repeat_carriers} (${P(xp.repeat_rate)})</span><span class="tt">Carriers who called more than once. High repeat rate = carriers trust the system and come back.</span></div></div>`;
+  $('xm').innerHTML=`${sl.map(s=>`<div class="flex items-center justify-between text-xs"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm shrink-0" style="background:${SC[s]}"></span><span class="text-slate-500 font-medium">${s[0].toUpperCase()+s.slice(1)}</span></div><span class="font-bold">${sd[s]||0}</span></div>`).join('')}<div class="pt-2 mt-2 border-t border-slate-100 space-y-1.5"><div class="flex justify-between text-xs tip"><span class="text-slate-400 font-medium">Unique carriers</span><span class="font-bold">${xp.unique_carriers}</span><span class="tt">Distinct MC numbers that called in the selected period.</span></div><div class="flex justify-between text-xs tip"><span class="text-slate-400 font-medium">Repeat callers</span><span class="font-bold text-blue-600">${xp.repeat_carriers} (${P(xp.repeat_rate)})</span><span class="tt">Carriers who called more than once. Higher = carriers trust the system and return.</span></div></div>`;
   const hc=sd.hostile||0;
-  $('i6').innerHTML=`<p>${hc>0?`${P(xp.satisfaction_rate)} satisfaction. <strong style="color:#dc2626">${hc} hostile</strong> — review de-escalation.`:`${P(xp.satisfaction_rate)} satisfaction. ${xp.repeat_carriers} repeat caller(s).`}</p>`;
+  $('i6').innerHTML=`<p>${hc>0?`${P(xp.satisfaction_rate)} satisfaction. <strong style="color:#dc2626">${hc} hostile</strong> interaction(s) — review de-escalation.`:`${P(xp.satisfaction_rate)} carrier satisfaction. ${xp.repeat_carriers} repeat caller(s).`}</p>`;
 
-  // === COVERAGE COMPARISON ===
-  const humanHrs=45,aiHrs=168,mult=(aiHrs/humanHrs).toFixed(1);
-  const humanPct=Math.round(humanHrs/aiHrs*100);
-  const missedPct=100-humanPct;
-  const weekendHrs=48; // Sat+Sun = 48 hours uncovered
-  const nightHrs=75; // 5 weeknights × 15 off-hours (5pm-8am)
-  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const heatmap=days.map((d,i)=>{
-    const isWeekday=i<5;
-    // Human: 8am-5pm weekdays only. AI: all hours.
-    let cells='';
-    for(let h=0;h<24;h+=3){
-      const humanOn=isWeekday&&h>=8&&h<17;
-      const block=humanOn?'bg-slate-300':'bg-red-100';
-      cells+=`<div class="w-full h-3 rounded-sm ${block}" title="${d} ${h}:00 — ${humanOn?'Covered':'No coverage'}"></div>`;
-    }
-    return`<div><p class="text-[8px] text-slate-400 font-bold text-center mb-1">${d}</p><div class="grid grid-rows-8 gap-0.5">${cells}</div></div>`;
-  }).join('');
+  // 7. Operational Efficiency
+  const avgDur=xp.avg_call_duration_seconds||0;
+  const avgDurMin=(avgDur/60).toFixed(1);
+  const costPerBooking=fn.booked>0?ex.ai_cost/fn.booked:0;
+  const humanCostPerBooking=fn.booked>0?ex.human_cost_baseline/fn.booked:0;
+  const callsPerHr=avgDur>0?Math.round(3600/avgDur):0;
+  const curPerDay=ex.total_calls>0?(ex.total_calls/(d.period_days||30)):0;
+  const humanRepsNeeded=curPerDay>0?Math.max(1,Math.ceil(curPerDay/30)):0;
 
-  $('cov').innerHTML=`
-    <div>
-      <div class="flex justify-between text-xs mb-1.5"><span class="font-bold text-slate-600 tip">Human Team<span class="tt">Typical brokerage staffing: Monday–Friday, 8am–5pm. 9 hours × 5 days = 45 hours per week. No coverage on nights, weekends, or holidays.</span></span><span class="text-slate-400 font-medium">${humanHrs} hrs/week · <strong class="text-slate-600">${humanPct}%</strong> of week</span></div>
-      <div class="w-full bg-slate-100 rounded-lg h-7"><div class="cov-bar" style="width:${humanPct}%;background:linear-gradient(135deg,#94a3b8,#64748b)">${humanHrs}h</div></div>
-    </div>
-    <div>
-      <div class="flex justify-between text-xs mb-1.5"><span class="font-bold text-blue-600 tip">AI Agent<span class="tt">AI operates 24 hours × 7 days = 168 hours per week. No breaks, no PTO, no shift changes, no overtime cost. A carrier calling at 2am Saturday gets the same experience as 2pm Tuesday.</span></span><span class="text-slate-400 font-medium">${aiHrs} hrs/week · <strong class="text-blue-600">100%</strong> of week</span></div>
-      <div class="w-full bg-slate-100 rounded-lg h-7"><div class="cov-bar" style="width:100%;background:linear-gradient(135deg,#3b82f6,#2563eb)">${aiHrs}h</div></div>
-    </div>
+  $('ops').innerHTML=[
+    mkpi('Avg Call Duration',avgDurMin+' min','Average time per call from pickup to hang-up. Shorter calls = faster carrier throughput. Human reps avg ~12 min per inbound call.'),
+    mkpi('Cost Per Booking',M(costPerBooking),'Total AI operating cost ÷ number of bookings. Lower = more efficient. Human equivalent: '+M(humanCostPerBooking)+'/booking.'),
+    mkpi('Throughput',callsPerHr+'/hr','Estimated calls the agent can handle per hour based on avg call duration. Unlike humans, AI handles calls sequentially with zero downtime between.'),
+    mkpi('Human Equivalent',humanRepsNeeded+' rep(s)','At ~30 calls/rep/day, this volume would require '+humanRepsNeeded+' full-time human rep(s). AI handles it with zero headcount.'),
+  ].join('');
+  $('i7').innerHTML=`<p>Each call averages <strong>${avgDurMin} minutes</strong>. Cost per booking: <strong>${M(costPerBooking)}</strong> (human equivalent: ${M(humanCostPerBooking)}). Current volume would require <strong>${humanRepsNeeded} human rep(s)</strong>.</p>`;
 
-    <div class="mt-3 pt-3 border-t border-slate-100">
-      <p class="text-[9px] text-slate-400 uppercase tracking-wider font-bold mb-2">Human coverage gaps (weekly)</p>
-      <div class="grid grid-cols-7 gap-1.5">${heatmap}</div>
-      <div class="flex items-center gap-4 mt-2">
-        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-slate-300"></span><span class="text-[9px] text-slate-400">Covered</span></div>
-        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-red-100"></span><span class="text-[9px] text-slate-400">No coverage</span></div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-3 gap-2 mt-3">
-      <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-center tip">
-        <span class="tt">168 hours (AI) ÷ 45 hours (human) = ${mult}x more availability for inbound carrier calls.</span>
-        <p class="text-xl font-extrabold text-blue-600">${mult}x</p>
-        <p class="text-[9px] text-blue-400 font-medium mt-0.5">more coverage</p>
-      </div>
-      <div class="bg-red-50 border border-red-100 rounded-xl p-3 text-center tip">
-        <span class="tt">${missedPct}% of the week (${aiHrs-humanHrs} hours) has zero human coverage. That's every night after 5pm plus all weekend — ${weekendHrs} weekend hours and ${nightHrs} weeknight off-hours.</span>
-        <p class="text-xl font-extrabold text-red-500">${missedPct}%</p>
-        <p class="text-[9px] text-red-400 font-medium mt-0.5">uncovered by humans</p>
-      </div>
-      <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center tip">
-        <span class="tt">AI answers instantly — no hold queues, no voicemail, no "call back during business hours." Every carrier gets served on the first ring, 24/7.</span>
-        <p class="text-xl font-extrabold text-emerald-600">0 sec</p>
-        <p class="text-[9px] text-emerald-500 font-medium mt-0.5">wait time</p>
-      </div>
-    </div>`;
-
-  // === SCALE PROJECTOR ===
-  const convR=(ex.conversion_rate||0)/100;
-  const avgDeal=rv.avg_deal_size||0;
-  const curPerDay=ex.total_calls>0?Math.max(ex.total_calls/(d.period_days||30),1):1;
-  const costPerCall=18-1.5;
-
+  // Scale Projector
+  const convR=(ex.conversion_rate||0)/100;const avgDeal=rv.avg_deal_size||0;const costPerCall=18-1.5;
   const tiers=[
-    {label:'Current',calls:Math.round(curPerDay),color:'#94a3b8',bg:'bg-slate-100',accent:'text-slate-700',border:'border-slate-200'},
-    {label:'Growth',calls:50,color:'#3b82f6',bg:'bg-blue-50',accent:'text-blue-700',border:'border-blue-200'},
+    {label:'Current',calls:Math.max(Math.round(curPerDay),1),color:'#64748b',bg:'bg-slate-50',accent:'text-slate-700',border:'border-slate-200'},
+    {label:'Growth',calls:50,color:'#2563eb',bg:'bg-blue-50',accent:'text-blue-700',border:'border-blue-200'},
     {label:'Full Scale',calls:200,color:'#16a34a',bg:'bg-emerald-50',accent:'text-emerald-700',border:'border-emerald-200'},
   ];
-  const tierData=tiers.map(t=>{
-    const mo=t.calls*30;
-    const bk=Math.round(mo*convR);
-    const rev=bk*avgDeal;
-    const sav=mo*costPerCall;
-    const reps=Math.max(1,Math.round(t.calls/30));
-    return{...t,mo,bk,rev,sav,reps};
-  });
+  const tierData=tiers.map(t=>{const mo=t.calls*30;const bk=Math.round(mo*convR);const rev=bk*avgDeal;const sav=mo*costPerCall;const reps=Math.max(1,Math.round(t.calls/30));return{...t,mo,bk,rev,sav,reps}});
 
-  $('scale').innerHTML=`
-    <div class="grid grid-cols-3 gap-3">
-      ${tierData.map(t=>`
-        <div class="${t.bg} border ${t.border} rounded-xl p-4 relative">
-          <p class="text-[9px] uppercase tracking-wider font-bold ${t.accent} mb-3">${t.label}</p>
-          <p class="text-[10px] text-slate-400 font-medium tip">${t.calls} calls/day<span class="tt">${t.calls} calls/day × 30 days = ${t.mo.toLocaleString()} calls/month.</span></p>
-          <div class="mt-3 space-y-2">
-            <div class="tip"><span class="tt">${t.mo.toLocaleString()} calls × ${P(ex.conversion_rate)} conversion = ${t.bk} bookings/mo.</span><div class="flex justify-between text-xs"><span class="text-slate-400">Bookings</span><span class="font-bold ${t.accent}">${t.bk}</span></div></div>
-            <div class="tip"><span class="tt">${t.bk} bookings × ${M(avgDeal)} avg deal = ${M(t.rev)}/mo.</span><div class="flex justify-between text-xs"><span class="text-slate-400">Revenue</span><span class="font-bold ${t.accent}">${M(t.rev)}</span></div></div>
-            <div class="tip"><span class="tt">${t.mo.toLocaleString()} calls × $16.50 savings/call = ${M(t.sav)}/mo.</span><div class="flex justify-between text-xs"><span class="text-slate-400">Savings</span><span class="font-bold ${t.accent}">${M(t.sav)}</span></div></div>
-            <div class="tip"><span class="tt">At ~30 calls/rep/day, ${t.calls} calls/day replaces ${t.reps} human rep(s).</span><div class="flex justify-between text-xs"><span class="text-slate-400">Reps replaced</span><span class="font-bold ${t.accent}">${t.reps}</span></div></div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-    <p class="text-[10px] text-slate-400 mt-3 text-center font-medium">Based on current ${P(ex.conversion_rate)} conversion · ${M(avgDeal)} avg deal · $18/call human baseline</p>`;
+  $('scale').innerHTML=`<div class="grid grid-cols-3 gap-3">${tierData.map(t=>`<div class="${t.bg} border ${t.border} rounded-xl p-4"><p class="text-[9px] uppercase tracking-wider font-bold ${t.accent} mb-2">${t.label} · ${t.calls}/day</p><div class="space-y-1.5"><div class="flex justify-between text-xs tip"><span class="text-slate-400">Bookings/mo</span><span class="font-bold ${t.accent}">${t.bk}</span><span class="tt">${t.mo.toLocaleString()} calls × ${P(ex.conversion_rate)} = ${t.bk} bookings.</span></div><div class="flex justify-between text-xs tip"><span class="text-slate-400">Revenue/mo</span><span class="font-bold ${t.accent}">${M(t.rev)}</span><span class="tt">${t.bk} bookings × ${M(avgDeal)} avg deal.</span></div><div class="flex justify-between text-xs tip"><span class="text-slate-400">Savings/mo</span><span class="font-bold ${t.accent}">${M(t.sav)}</span><span class="tt">${t.mo.toLocaleString()} calls × $16.50 savings per call.</span></div><div class="flex justify-between text-xs tip"><span class="text-slate-400">Reps replaced</span><span class="font-bold ${t.accent}">${t.reps}</span><span class="tt">At ~30 calls/rep/day.</span></div></div></div>`).join('')}</div><p class="text-[10px] text-slate-400 mt-3 text-center font-medium">Based on current ${P(ex.conversion_rate)} conversion · ${M(avgDeal)} avg deal</p>`;
 
-  // Scale bar chart
   if(window._scl)window._scl.destroy();
-  window._scl=new Chart($('scale-chart').getContext('2d'),{
-    type:'bar',
-    data:{
-      labels:tierData.map(t=>t.label),
-      datasets:[
-        {label:'Revenue/mo',data:tierData.map(t=>t.rev),backgroundColor:['#cbd5e1','#93c5fd','#86efac'],borderRadius:6,barPercentage:.5},
-        {label:'Savings/mo',data:tierData.map(t=>t.sav),backgroundColor:['#e2e8f0','#bfdbfe','#bbf7d0'],borderRadius:6,barPercentage:.5},
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:16,font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}},
-      scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+Number(v/1000).toFixed(0)+'k',font:{family:'JetBrains Mono',size:10}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'700'}}}}
-    }
-  });
+  window._scl=new Chart($('scale-chart').getContext('2d'),{type:'bar',data:{labels:tierData.map(t=>t.label),datasets:[{label:'Revenue/mo',data:tierData.map(t=>t.rev),backgroundColor:['#cbd5e1','#93c5fd','#86efac'],borderRadius:6,barPercentage:.5},{label:'Savings/mo',data:tierData.map(t=>t.sav),backgroundColor:['#e2e8f0','#bfdbfe','#bbf7d0'],borderRadius:6,barPercentage:.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:16,font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+(v>=1000?(v/1000).toFixed(0)+'k':v),font:{family:'JetBrains Mono',size:10}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'700'}}}}}});
 
-  // === Recommendations (max 4) ===
+  // 8. Recommendations (max 4)
   const recs=[];
   um.slice(0,2).forEach(u=>recs.push({p:0,i:'📦',t:`Source <strong>${u.equipment_type||'loads'}</strong>: ${u.origin||'?'} → ${u.destination||'Open'} — ${u.carrier_requests} carrier(s) requesting.`,g:'Source'}));
   hl2.filter(l=>l.conversion_pct>=60&&l.booked>=1).slice(0,1).forEach(l=>recs.push({p:1,i:'🔥',t:`<strong>${l.origin} → ${l.destination}</strong> converts at ${P(l.conversion_pct)} — increase inventory.`,g:'Scale Up'}));
-  if(wa>0)recs.push({p:1,i:'💰',t:`${wa} failed negotiation(s). Gap: ${P(rj.avg_negotiation_gap_pct)} from ceiling. Consider +2% on contested lanes.`,g:'Pricing'});
+  if(wa>0)recs.push({p:1,i:'💰',t:`${wa} failed negotiation(s). Gap: ${P(rj.avg_negotiation_gap_pct)} from ceiling. Consider stretching +2%.`,g:'Pricing'});
   if(hc>0&&recs.length<4)recs.push({p:2,i:'⚡',t:`${hc} hostile interaction(s) — review transcripts.`,g:'Training'});
-  if(xp.repeat_carriers>0&&recs.length<4)recs.push({p:2,i:'⭐',t:`${xp.repeat_carriers} repeat carrier(s) — assign dedicated rep.`,g:'Nurture'});
+  if(xp.repeat_carriers>0&&recs.length<4)recs.push({p:2,i:'⭐',t:`${xp.repeat_carriers} repeat carrier(s) — consider assigning dedicated rep.`,g:'Nurture'});
   if(!recs.length)recs.push({p:2,i:'✅',t:'System performing well. Monitor as volume grows.',g:'On Track'});
   recs.sort((a,b)=>a.p-b.p);
   $('rc').innerHTML=recs.slice(0,4).map(r=>{const tc=r.p===0?'tr':r.p===1?'ta':'tg';return`<div class="rec flex items-start gap-3"><span class="text-base mt-0.5">${r.i}</span><p class="flex-1 text-[13px] text-slate-600 leading-relaxed">${r.t}</p><span class="tag ${tc} shrink-0">${r.g}</span></div>`}).join('');
 
-  // === Activity ===
+  // 9. Activity
   $('al').querySelector('tbody').innerHTML=rc.length?rc.map(c=>{
     const ol=OL[c.outcome]||c.outcome;const oc2=OC[c.outcome]||'#94a3b8';
     const ed=c.extracted_data||{};const ln2=ed.lane||c.load_id||'—';
