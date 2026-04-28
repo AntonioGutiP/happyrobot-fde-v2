@@ -83,18 +83,12 @@ tr:hover td{background:#f8fafc}
 <div class="insight mt-4" id="i3"></div>
 </div>
 
-<!-- 4. Negotiation Charts -->
+<!-- 4. Negotiation Replay -->
 <div class="mt-8" id="replay-wrap" style="display:none">
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-  <div class="card p-6">
-    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Negotiation Replay — Latest Deal</p>
-    <p class="text-xs text-slate-400 mb-4" id="replay-sub"></p>
-    <div style="height:220px"><canvas id="replay-chart"></canvas></div>
-  </div>
-  <div class="card p-6">
-    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Call Activity</p>
-    <div id="call-timeline"></div>
-  </div>
+<div class="card p-6">
+  <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Negotiation Replay — Latest Booked Deal</p>
+  <p class="text-xs text-slate-400 mb-4" id="replay-sub"></p>
+  <div style="height:240px"><canvas id="replay-chart"></canvas></div>
 </div>
 </div>
 
@@ -223,18 +217,12 @@ function R(d){
   $('pl').innerHTML=`${tip('Agent P&L','Compares what these calls would cost with human reps vs AI.')}<div class="mt-2 space-y-1.5"><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Human (${ex.total_calls}×$18)</span><span class="text-red-500 font-bold">${M(ex.human_cost_baseline)}</span></div><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">AI (${ex.total_calls}×$1.50)</span><span class="text-emerald-600 font-bold">${M(ex.ai_cost)}</span></div><div class="flex justify-between text-xs mt-2 pt-2 border-t border-slate-100"><span class="text-slate-400 font-medium">Net Savings</span><span class="text-emerald-600 font-extrabold text-sm">${M(ex.cost_savings)}</span></div></div>`;
   $('i3').innerHTML=`<p>${ex.avg_concession_pct>0?`Average concession <strong>${P(ex.avg_concession_pct)}</strong> above listed rate — below typical human 8-12% variance.`:'All deals closed at listed rate.'}</p>`;
 
-  // 4. Negotiation Replay + Pricing Strategy
-  const ps2=d.pricing_strategies||{load_activity:[]};
+  // 4. Negotiation Replay
   const bookedWithNeg=rc.filter(c=>c.outcome==='booked'&&c.counter_offers&&c.counter_offers.length>0);
-  const hasReplay=bookedWithNeg.length>0;
-  const hasInventory=(ps2.load_activity||[]).length>0;
 
-  if(hasReplay||hasInventory){
+  if(bookedWithNeg.length>0){
     $('replay-wrap').style.display='block';
-
-    // Left: Negotiation Replay
-    if(hasReplay){
-      const latest=bookedWithNeg[0];const ed=latest.extracted_data||{};
+    const latest=bookedWithNeg[0];const ed=latest.extracted_data||{};
       $('replay-sub').textContent=`${ed.lane||latest.load_id||'—'} · ${latest.carrier_name||'Carrier'} · Agreed at ${M(latest.agreed_price)}`;
       const co=latest.counter_offers;
       const labels=['Pitch',...co.map(c=>'Round '+c.round),'Deal'];
@@ -245,28 +233,6 @@ function R(d){
         {label:'Carrier Asks',data:carrierLine,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.05)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#dc2626',tension:.3,fill:false,spanGaps:true},
         {label:'Agent Counters',data:agentLine,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.05)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#2563eb',tension:.3,fill:false},
       ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{family:'Plus Jakarta Sans',size:12,weight:'600'}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+Number(ctx.raw).toLocaleString()}}},scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+Number(v).toLocaleString(),font:{family:'JetBrains Mono',size:11}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}}}});
-    }
-
-    // Right: Call Activity Timeline
-    if(rc.length>0){
-      const timelineCalls=rc.slice(0,12);
-      $('call-timeline').innerHTML=`
-        <div class="flex gap-1.5 flex-wrap mb-3">${timelineCalls.map(c=>{
-          const oc2=OC[c.outcome]||'#94a3b8';
-          const ed=c.extracted_data||{};
-          const lane=ed.lane||c.load_id||'—';
-          const dur=c.call_duration?Math.round(c.call_duration/60)+'m':'—';
-          return`<div class="tip" style="flex:1;min-width:40px;max-width:80px">
-            <span class="tt"><strong>${c.carrier_name||c.carrier_mc}</strong><br>${lane}<br>${OL[c.outcome]} · ${c.sentiment} · ${dur}<br>${TA(c.created_at)}</span>
-            <div style="background:${oc2};height:32px;border-radius:6px;opacity:.85;transition:opacity .2s;cursor:default" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85"></div>
-          </div>`;
-        }).join('')}</div>
-        <div class="flex items-center gap-4 flex-wrap">${Object.entries(OL).map(([k,v])=>`<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:${OC[k]}"></span><span class="text-[9px] text-slate-400 font-medium">${v}</span></div>`).join('')}</div>
-      `;
-    }else{
-      $('call-timeline').innerHTML='<p class="text-sm text-slate-400 py-6 text-center">No calls yet</p>';
-    }
-
   }else{$('replay-wrap').style.display='none'}
 
   // 5. Lanes
