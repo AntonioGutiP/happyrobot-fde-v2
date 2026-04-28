@@ -92,9 +92,9 @@ tr:hover td{background:#f8fafc}
     <div style="height:220px"><canvas id="replay-chart"></canvas></div>
   </div>
   <div class="card p-6">
-    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Load Inventory Health</p>
-    <p class="text-xs text-slate-400 mb-4">Activity per load — pitches, bookings, and declines</p>
-    <div style="height:220px"><canvas id="inv-chart"></canvas></div>
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Load Board</p>
+    <p class="text-xs text-slate-400 mb-4">Each load's pipeline status at a glance</p>
+    <div id="load-board" class="space-y-2"></div>
   </div>
 </div>
 </div>
@@ -248,30 +248,40 @@ function R(d){
       ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{family:'Plus Jakarta Sans',size:12,weight:'600'}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+Number(ctx.raw).toLocaleString()}}},scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+Number(v).toLocaleString(),font:{family:'JetBrains Mono',size:11}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}}}});
     }
 
-    // Right: Load Inventory Health
+    // Right: Load Board
     const invLoads=d.pricing_strategies?.load_activity||[];
     if(invLoads.length>0){
-      if(window._inv)window._inv.destroy();
-      const invLabels=invLoads.map(l=>l.lane_short);
-      window._inv=new Chart($('inv-chart').getContext('2d'),{
-        type:'bar',
-        data:{
-          labels:invLabels,
-          datasets:[
-            {label:'Booked',data:invLoads.map(l=>l.booked),backgroundColor:'#16a34a',borderRadius:4,barPercentage:.7},
-            {label:'Pitched (no book)',data:invLoads.map(l=>Math.max(0,l.pitched-l.booked-l.declined)),backgroundColor:'#3b82f6',borderRadius:4,barPercentage:.7},
-            {label:'Declined',data:invLoads.map(l=>l.declined),backgroundColor:'#dc2626',borderRadius:4,barPercentage:.7},
-          ]
-        },
-        options:{
-          responsive:true,maintainAspectRatio:false,indexAxis:'y',
-          plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:14,font:{family:'Plus Jakarta Sans',size:10,weight:'600'}}},
-            tooltip:{callbacks:{afterBody:function(ctx){const i=ctx[0].dataIndex;const l=invLoads[i];return`Rate: ${M(l.rate)} · ${l.equipment} · ${l.status}`}}}},
-          scales:{x:{stacked:true,beginAtZero:true,ticks:{stepSize:1,font:{family:'JetBrains Mono',size:10}},grid:{color:'#f1f5f9'}},y:{stacked:true,grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:10,weight:'600'}}}}
-        }
-      });
+      $('load-board').innerHTML=invLoads.map(l=>{
+        const total=l.pitched+l.booked+l.declined;
+        let health,hClass,hBg;
+        if(l.booked>0){health='Booked';hClass='text-emerald-700';hBg='bg-emerald-50 border-emerald-200'}
+        else if(l.declined>=2){health='Needs repricing';hClass='text-red-600';hBg='bg-red-50 border-red-200'}
+        else if(l.pitched>0&&l.declined>0){health='Watch';hClass='text-amber-600';hBg='bg-amber-50 border-amber-200'}
+        else if(l.pitched>0){health='Active';hClass='text-blue-600';hBg='bg-blue-50 border-blue-200'}
+        else{health='Fresh';hClass='text-slate-500';hBg='bg-white border-slate-200'}
+        // Pipeline dots
+        const dots=[
+          {label:'P',count:l.pitched,color:'#3b82f6',tt:'Times pitched to carriers'},
+          {label:'B',count:l.booked,color:'#16a34a',tt:'Times booked'},
+          {label:'D',count:l.declined,color:'#dc2626',tt:'Times declined/rejected'},
+        ];
+        const pips=dots.map(d=>`<div class="tip"><span class="tt">${d.tt}</span><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:${d.color}"></span><span class="text-[10px] font-bold" style="color:${d.color}">${d.count}</span></div></div>`).join('');
+        return`<div class="flex items-center gap-3 p-2.5 rounded-lg border ${hBg} transition-all hover:shadow-sm">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-700 truncate">${l.lane_short}</span>
+              <span class="text-[9px] font-medium ${hClass} uppercase">${health}</span>
+            </div>
+            <div class="flex items-center gap-3 mt-1">
+              <span class="text-[10px] text-slate-400">${l.equipment}</span>
+              <span class="text-[10px] text-slate-400 mono">${M(l.rate)}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">${pips}</div>
+        </div>`;
+      }).join('');
     }else{
-      $('inv-chart').parentElement.innerHTML='<p class="text-sm text-slate-400 py-12 text-center">No load activity yet</p>';
+      $('load-board').innerHTML='<p class="text-sm text-slate-400 py-6 text-center">No load activity yet</p>';
     }
 
   }else{$('replay-wrap').style.display='none'}
