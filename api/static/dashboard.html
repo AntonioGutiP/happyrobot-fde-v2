@@ -83,12 +83,26 @@ tr:hover td{background:#f8fafc}
 <div class="insight mt-4" id="i3"></div>
 </div>
 
-<!-- 4. Negotiation Replay -->
+<!-- 4. Negotiation Charts -->
 <div class="mt-8" id="replay-wrap" style="display:none">
-<div class="card p-6">
-  <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Negotiation Replay — Latest Booked Deal</p>
-  <p class="text-xs text-slate-400 mb-4" id="replay-sub"></p>
-  <div style="height:220px"><canvas id="replay-chart"></canvas></div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="card p-6">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Negotiation Replay — Latest Deal</p>
+    <p class="text-xs text-slate-400 mb-4" id="replay-sub"></p>
+    <div style="height:220px"><canvas id="replay-chart"></canvas></div>
+  </div>
+  <div class="card p-6">
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Pricing Strategy — Available Loads</p>
+    <p class="text-xs text-slate-400 mb-4">Based on carrier interest and decline history</p>
+    <div class="flex items-start gap-5">
+      <div class="relative shrink-0" style="width:140px;height:140px">
+        <canvas id="strat-chart" width="140" height="140"></canvas>
+        <div class="dc"><p class="text-lg font-extrabold text-slate-800" id="strat-total">—</p><p class="text-[7px] text-slate-400 uppercase font-bold">loads</p></div>
+      </div>
+      <div class="flex-1 space-y-2" id="strat-legend"></div>
+    </div>
+    <div class="mt-3" id="strat-attention"></div>
+  </div>
 </div>
 </div>
 
@@ -217,21 +231,61 @@ function R(d){
   $('pl').innerHTML=`${tip('Agent P&L','Compares what these calls would cost with human reps vs AI.')}<div class="mt-2 space-y-1.5"><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">Human (${ex.total_calls}×$18)</span><span class="text-red-500 font-bold">${M(ex.human_cost_baseline)}</span></div><div class="flex justify-between text-xs"><span class="text-slate-400 font-medium">AI (${ex.total_calls}×$1.50)</span><span class="text-emerald-600 font-bold">${M(ex.ai_cost)}</span></div><div class="flex justify-between text-xs mt-2 pt-2 border-t border-slate-100"><span class="text-slate-400 font-medium">Net Savings</span><span class="text-emerald-600 font-extrabold text-sm">${M(ex.cost_savings)}</span></div></div>`;
   $('i3').innerHTML=`<p>${ex.avg_concession_pct>0?`Average concession <strong>${P(ex.avg_concession_pct)}</strong> above listed rate — below typical human 8-12% variance.`:'All deals closed at listed rate.'}</p>`;
 
-  // 4. Negotiation Replay
+  // 4. Negotiation Replay + Pricing Strategy
+  const ps2=d.pricing_strategies||{firm:0,moderate:0,flexible:0,total:0,attention_loads:[]};
   const bookedWithNeg=rc.filter(c=>c.outcome==='booked'&&c.counter_offers&&c.counter_offers.length>0);
-  if(bookedWithNeg.length>0){
+  const hasReplay=bookedWithNeg.length>0;
+  const hasStrategy=ps2.total>0;
+
+  if(hasReplay||hasStrategy){
     $('replay-wrap').style.display='block';
-    const latest=bookedWithNeg[0];const ed=latest.extracted_data||{};
-    $('replay-sub').textContent=`${ed.lane||latest.load_id||'—'} · ${latest.carrier_name||'Carrier'} · Agreed at ${M(latest.agreed_price)}`;
-    const co=latest.counter_offers;
-    const labels=['Pitch',...co.map(c=>'Round '+c.round),'Deal'];
-    const carrierLine=[null,...co.map(c=>c.carrier_offer),latest.agreed_price];
-    const agentLine=[latest.initial_rate,...co.map(c=>c.our_counter),latest.agreed_price];
-    if(window._rc)window._rc.destroy();
-    window._rc=new Chart($('replay-chart').getContext('2d'),{type:'line',data:{labels,datasets:[
-      {label:'Carrier Asks',data:carrierLine,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.05)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#dc2626',tension:.3,fill:false,spanGaps:true},
-      {label:'Agent Counters',data:agentLine,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.05)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#2563eb',tension:.3,fill:false},
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{family:'Plus Jakarta Sans',size:12,weight:'600'}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+Number(ctx.raw).toLocaleString()}}},scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+Number(v).toLocaleString(),font:{family:'JetBrains Mono',size:11}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}}}});
+
+    // Left: Negotiation Replay
+    if(hasReplay){
+      const latest=bookedWithNeg[0];const ed=latest.extracted_data||{};
+      $('replay-sub').textContent=`${ed.lane||latest.load_id||'—'} · ${latest.carrier_name||'Carrier'} · Agreed at ${M(latest.agreed_price)}`;
+      const co=latest.counter_offers;
+      const labels=['Pitch',...co.map(c=>'Round '+c.round),'Deal'];
+      const carrierLine=[null,...co.map(c=>c.carrier_offer),latest.agreed_price];
+      const agentLine=[latest.initial_rate,...co.map(c=>c.our_counter),latest.agreed_price];
+      if(window._rc)window._rc.destroy();
+      window._rc=new Chart($('replay-chart').getContext('2d'),{type:'line',data:{labels,datasets:[
+        {label:'Carrier Asks',data:carrierLine,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.05)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#dc2626',tension:.3,fill:false,spanGaps:true},
+        {label:'Agent Counters',data:agentLine,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.05)',borderWidth:3,pointRadius:6,pointBackgroundColor:'#2563eb',tension:.3,fill:false},
+      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{family:'Plus Jakarta Sans',size:12,weight:'600'}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+Number(ctx.raw).toLocaleString()}}},scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+Number(v).toLocaleString(),font:{family:'JetBrains Mono',size:11}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}}}});
+    }
+
+    // Right: Pricing Strategy donut + attention list
+    $('strat-total').textContent=ps2.total;
+    const stratColors={firm:'#16a34a',moderate:'#d97706',flexible:'#dc2626'};
+    const stratLabels={firm:'Firm — hold rate',moderate:'Moderate — stretch up to 7%',flexible:'Flexible — stretch up to 10%'};
+    const stratKeys=['firm','moderate','flexible'];
+    const stratVals=stratKeys.map(k=>ps2[k]||0);
+
+    if(window._st)window._st.destroy();
+    window._st=new Chart($('strat-chart').getContext('2d'),{type:'doughnut',data:{labels:stratKeys.map(k=>stratLabels[k]),datasets:[{data:stratVals,backgroundColor:stratKeys.map(k=>stratColors[k]),borderWidth:2,borderColor:'#fff'}]},options:{cutout:'65%',plugins:{legend:{display:false}},responsive:false}});
+
+    $('strat-legend').innerHTML=stratKeys.map((k,i)=>`
+      <div class="flex items-center justify-between tip">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-sm shrink-0" style="background:${stratColors[k]}"></span>
+          <span class="text-xs font-medium text-slate-600">${k[0].toUpperCase()+k.slice(1)}</span>
+        </div>
+        <span class="text-xs font-bold">${stratVals[i]}</span>
+        <span class="tt">${stratLabels[k]}. ${k==='firm'?'Low exposure, no declines — hold at listed rate.':k==='moderate'?'Some interest but declines. Willing to stretch up to 7% above rate.':'Multiple declines. Stretch up to 10% to close.'}</span>
+      </div>
+    `).join('');
+
+    const attn=ps2.attention_loads||[];
+    $('strat-attention').innerHTML=attn.length?`
+      <p class="text-[9px] text-slate-400 uppercase tracking-wider font-bold mb-2">Loads needing attention</p>
+      ${attn.map(l=>`<div class="flex items-center justify-between py-2 border-b border-slate-100 last:border-0 text-xs">
+        <span class="font-semibold text-slate-700">${l.lane}</span>
+        <span class="text-slate-400">${l.equipment} · ${M(l.rate)}</span>
+        <span class="tag ${l.declines>=3?'tr':'ta'}">${l.pitches}P ${l.declines}D</span>
+      </div>`).join('')}
+    `:'';
+
   }else{$('replay-wrap').style.display='none'}
 
   // 5. Lanes
