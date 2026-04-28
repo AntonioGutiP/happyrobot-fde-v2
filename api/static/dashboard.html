@@ -92,9 +92,8 @@ tr:hover td{background:#f8fafc}
     <div style="height:220px"><canvas id="replay-chart"></canvas></div>
   </div>
   <div class="card p-6">
-    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-1">Load Board</p>
-    <p class="text-xs text-slate-400 mb-4">Each load's pipeline status at a glance</p>
-    <div id="load-board" class="space-y-2"></div>
+    <p class="text-[11px] text-slate-400 uppercase tracking-wider font-bold mb-4">Call Activity</p>
+    <div id="call-timeline"></div>
   </div>
 </div>
 </div>
@@ -248,40 +247,24 @@ function R(d){
       ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{family:'Plus Jakarta Sans',size:12,weight:'600'}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': $'+Number(ctx.raw).toLocaleString()}}},scales:{y:{beginAtZero:false,ticks:{callback:v=>'$'+Number(v).toLocaleString(),font:{family:'JetBrains Mono',size:11}},grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{font:{family:'Plus Jakarta Sans',size:11,weight:'600'}}}}}});
     }
 
-    // Right: Load Board
-    const invLoads=d.pricing_strategies?.load_activity||[];
-    if(invLoads.length>0){
-      $('load-board').innerHTML=invLoads.map(l=>{
-        const total=l.pitched+l.booked+l.declined;
-        let health,hClass,hBg;
-        if(l.booked>0){health='Booked';hClass='text-emerald-700';hBg='bg-emerald-50 border-emerald-200'}
-        else if(l.declined>=2){health='Needs repricing';hClass='text-red-600';hBg='bg-red-50 border-red-200'}
-        else if(l.pitched>0&&l.declined>0){health='Watch';hClass='text-amber-600';hBg='bg-amber-50 border-amber-200'}
-        else if(l.pitched>0){health='Active';hClass='text-blue-600';hBg='bg-blue-50 border-blue-200'}
-        else{health='Fresh';hClass='text-slate-500';hBg='bg-white border-slate-200'}
-        // Pipeline dots
-        const dots=[
-          {label:'P',count:l.pitched,color:'#3b82f6',tt:'Times pitched to carriers'},
-          {label:'B',count:l.booked,color:'#16a34a',tt:'Times booked'},
-          {label:'D',count:l.declined,color:'#dc2626',tt:'Times declined/rejected'},
-        ];
-        const pips=dots.map(d=>`<div class="tip"><span class="tt">${d.tt}</span><div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:${d.color}"></span><span class="text-[10px] font-bold" style="color:${d.color}">${d.count}</span></div></div>`).join('');
-        return`<div class="flex items-center gap-3 p-2.5 rounded-lg border ${hBg} transition-all hover:shadow-sm">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-slate-700 truncate">${l.lane_short}</span>
-              <span class="text-[9px] font-medium ${hClass} uppercase">${health}</span>
-            </div>
-            <div class="flex items-center gap-3 mt-1">
-              <span class="text-[10px] text-slate-400">${l.equipment}</span>
-              <span class="text-[10px] text-slate-400 mono">${M(l.rate)}</span>
-            </div>
-          </div>
-          <div class="flex items-center gap-3 shrink-0">${pips}</div>
-        </div>`;
-      }).join('');
+    // Right: Call Activity Timeline
+    if(rc.length>0){
+      const timelineCalls=rc.slice(0,12);
+      $('call-timeline').innerHTML=`
+        <div class="flex gap-1.5 flex-wrap mb-3">${timelineCalls.map(c=>{
+          const oc2=OC[c.outcome]||'#94a3b8';
+          const ed=c.extracted_data||{};
+          const lane=ed.lane||c.load_id||'—';
+          const dur=c.call_duration?Math.round(c.call_duration/60)+'m':'—';
+          return`<div class="tip" style="flex:1;min-width:40px;max-width:80px">
+            <span class="tt"><strong>${c.carrier_name||c.carrier_mc}</strong><br>${lane}<br>${OL[c.outcome]} · ${c.sentiment} · ${dur}<br>${TA(c.created_at)}</span>
+            <div style="background:${oc2};height:32px;border-radius:6px;opacity:.85;transition:opacity .2s;cursor:default" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.85"></div>
+          </div>`;
+        }).join('')}</div>
+        <div class="flex items-center gap-4 flex-wrap">${Object.entries(OL).map(([k,v])=>`<div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:${OC[k]}"></span><span class="text-[9px] text-slate-400 font-medium">${v}</span></div>`).join('')}</div>
+      `;
     }else{
-      $('load-board').innerHTML='<p class="text-sm text-slate-400 py-6 text-center">No load activity yet</p>';
+      $('call-timeline').innerHTML='<p class="text-sm text-slate-400 py-6 text-center">No calls yet</p>';
     }
 
   }else{$('replay-wrap').style.display='none'}
